@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login / Daftar - Sahabat Rental Mobil</title>
+  <meta name="description" content="Masuk atau buat akun pelanggan Sahabat Rental Mobil dalam satu halaman.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="navbar-root"></div>
+
+  <main>
+    <div class="section">
+      <div class="container auth">
+        <!-- Panel samping -->
+        <div class="auth-side">
+          <span class="label label-light">Akun Pelanggan</span>
+          <h2>Satu halaman untuk masuk dan mendaftar</h2>
+          <p>Akun pelanggan digunakan untuk menyimpan data diri Anda agar pemesanan lewat formulir kontak terisi otomatis.</p>
+
+          <!-- Syarat registrasi (tampil pada tab Daftar) -->
+          <ul class="check-list hidden" id="info-daftar">
+            <li id="cl-1">Email belum pernah terdaftar</li>
+            <li id="cl-2">Nomor HP berupa angka 10 sampai 13 digit</li>
+            <li id="cl-3">Password minimal 6 karakter</li>
+          </ul>
+        </div>
+
+        <!-- Panel form dengan tab Masuk / Daftar -->
+        <div class="auth-form">
+          <div class="auth-tabs">
+            <button type="button" id="tab-masuk" class="active" onclick="pindahTab('masuk')">Masuk</button>
+            <button type="button" id="tab-daftar" onclick="pindahTab('daftar')">Daftar</button>
+          </div>
+
+          <h1 id="auth-judul">Login</h1>
+          <p class="muted" id="auth-sub">Masukkan email dan password yang sudah terdaftar.</p>
+
+          <!-- FORM MASUK -->
+          <div id="form-masuk">
+            <div class="alert alert-err" id="lg-err"></div>
+            <form onsubmit="return login(event)">
+              <label for="lg-email">Email</label>
+              <input type="email" id="lg-email" placeholder="nama@email.com">
+              <label for="lg-pass">Password</label>
+              <input type="password" id="lg-pass" placeholder="Masukkan password">
+              <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+          </div>
+
+          <!-- FORM DAFTAR -->
+          <div id="form-daftar" class="hidden">
+            <div class="alert alert-err" id="rg-err"></div>
+            <form onsubmit="return daftar(event)">
+              <label for="rg-nama">Nama Lengkap</label>
+              <input type="text" id="rg-nama" placeholder="Nama sesuai KTP">
+              <div class="grid-2 gap-sm">
+                <div>
+                  <label for="rg-email">Email</label>
+                  <input type="email" id="rg-email" placeholder="nama@email.com">
+                </div>
+                <div>
+                  <label for="rg-hp">Nomor HP</label>
+                  <input type="text" id="rg-hp" placeholder="08xxxxxxxxxx">
+                </div>
+              </div>
+              <div class="grid-2 gap-sm">
+                <div>
+                  <label for="rg-pass">Password</label>
+                  <input type="password" id="rg-pass">
+                </div>
+                <div>
+                  <label for="rg-pass2">Ulangi Password</label>
+                  <input type="password" id="rg-pass2">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Daftar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

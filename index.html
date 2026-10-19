@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beranda - Sahabat Rental Mobil</title>
+  <meta name="description" content="Sewa mobil jadi mudah: cek ketersediaan sesuai tanggal, lihat armada, dan pesan lewat halaman kontak.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar dirender bersama oleh js/script.js -->
+  <div id="navbar-root"></div>
+
+  <main>
+    <!-- ================= HERO ================= -->
+    <div class="hero">
+      <div class="container hero-grid">
+        <div class="hero-text">
+          <span class="label label-light">Rental Mobil Online</span>
+          <h1>Sewa mobil jadi <span class="hl">mudah, jelas,</span> dan tanpa bentrok jadwal.</h1>
+          <p>Cek ketersediaan mobil sesuai tanggal sewa, lihat armada kami, lalu kirim permintaan pemesanan tanpa harus datang ke kantor.</p>
+          <div class="btn-row">
+            <a href="katalog.html" class="btn btn-primary">Lihat Katalog</a>
+            <a href="login.html#daftar" class="btn btn-ghost">Daftar Akun</a>
+          </div>
+          <div class="hero-info">
+            <div><b id="bk-unit">0</b><span>Unit kendaraan</span></div>
+            <div><b>2</b><span>Pilihan layanan</span></div>
+            <div><b>Online</b><span>Pemesanan mandiri</span></div>
+          </div>
+        </div>
+        <div class="search-card">
+          <h3>Cek Ketersediaan</h3>
+          <p class="muted">Pilih tanggal sewa untuk melihat mobil yang masih tersedia.</p>
+          <div class="alert alert-err" id="bk-err"></div>
+          <label for="bk-mulai">Tanggal Mulai</label>
+          <input type="date" id="bk-mulai">
+          <label for="bk-selesai">Tanggal Selesai</label>
+          <input type="date" id="bk-selesai">
+          <button class="btn btn-dark btn-block" onclick="cariBeranda()">Cari Mobil Tersedia</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= KEUNGGULAN ================= -->
+    <div class="section">
+      <div class="container">
+        <span class="label">Keunggulan</span>
+        <h2>Kenapa memilih Sahabat Rental Mobil?</h2>
+        <div class="grid-3 mt-sm">
+          <div class="feature">
+            <div class="feature-icon" id="fi-1"></div>
+            <h3>Jadwal Terkunci Otomatis</h3>
+            <p>Mobil yang sudah dipesan pada tanggal tertentu langsung terkunci, sehingga tidak dapat dipesan oleh pelanggan lain.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon" id="fi-2"></div>
+            <h3>Biaya Transparan</h3>
+            <p>Tarif per hari ditampilkan jelas di katalog, termasuk opsi layanan dengan pengemudi.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon" id="fi-3"></div>
+            <h3>Respons Cepat</h3>
+            <p>Permintaan pemesanan dari halaman kontak langsung kami terima dan balas secepatnya.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MOBIL PILIHAN ================= -->
+    <div class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="label">Armada</span><h2>Mobil Pilihan</h2></div>
+          <a href="katalog.html" class="btn btn-outline">Lihat Semua Mobil</a>
+        </div>
+        <div class="grid-3" id="bk-list"></div>
+      </div>
+    </div>
+
+    <!-- ================= CARA SEWA ================= -->
+    <div class="section">
+      <div class="container">
+        <span class="label">Cara Sewa</span>
+        <h2>Tiga langkah untuk menyewa mobil</h2>
+        <div class="steps mt-sm">
+          <div class="step"><span>01</span><h3>Daftar dan Login</h3><p>Buat akun pelanggan lewat halaman Login / Daftar.</p></div>
+          <div class="step"><span>02</span><h3>Pilih Mobil dan Tanggal</h3><p>Cek mobil yang tersedia pada tanggal yang diinginkan di katalog.</p></div>
+          <div class="step"><span>03</span><h3>Kirim Pemesanan</h3><p>Tekan tombol Pesan, isi formulir kontak, dan tunggu konfirmasi kami.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= CTA ================= -->
+    <div class="section" style="padding-top: 0;">
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Butuh bantuan memilih mobil?</h2>
+            <p>Tim kami siap membantu setiap hari pukul 07.00 - 21.00 WIB.</p>
+          </div>
+          <a href="kontak.html" class="btn btn-primary">Hubungi Kami</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer dirender bersama oleh js/script.js -->
+  <div id="footer-root"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

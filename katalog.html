@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Kendaraan - Sahabat Rental Mobil</title>
+  <meta name="description" content="Katalog armada Sahabat Rental Mobil: cek ketersediaan mobil berdasarkan tanggal sewa, filter transmisi, dan cari nama mobil.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="navbar-root"></div>
+
+  <main>
+    <div class="page-head">
+      <div class="container">
+        <span class="label label-light">Katalog</span>
+        <h1>Katalog Kendaraan</h1>
+        <p>Pilih tanggal sewa dan filter sesuai kebutuhan untuk melihat mobil yang tersedia.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="container">
+        <div class="box filter-box no-print">
+          <div class="alert alert-err" id="kt-err"></div>
+          <div class="filter-grid">
+            <div>
+              <label for="kt-mulai">Tanggal Mulai</label>
+              <input type="date" id="kt-mulai">
+            </div>
+            <div>
+              <label for="kt-selesai">Tanggal Selesai</label>
+              <input type="date" id="kt-selesai">
+            </div>
+            <div>
+              <label for="kt-transmisi">Transmisi</label>
+              <select id="kt-transmisi" onchange="tampilKatalog()">
+                <option value="">Semua</option>
+                <option>Manual</option>
+                <option>Matic</option>
+              </select>
+            </div>
+            <div>
+              <label for="kt-cari">Cari Nama Mobil</label>
+              <input type="text" id="kt-cari" placeholder="Contoh: Avanza" oninput="tampilKatalog()">
+            </div>
+            <div>
+              <button class="btn btn-dark btn-block" onclick="tampilKatalog()">Cek Ketersediaan</button>
+            </div>
+          </div>
+        </div>
+        <p class="result-info" id="kt-info"></p>
+        <div class="grid-3" id="kt-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
