@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pemesanan & Pembayaran - Sahabat Rental Mobil</title>
+  <meta name="description" content="Formulir pemesanan mobil, perhitungan biaya otomatis, dan pembayaran online Sahabat Rental Mobil.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="navbar-root"></div>
+
+  <main>
+    <div class="page-head">
+      <div class="container">
+        <span class="label label-light">Reservasi Online</span>
+        <h1>Pemesanan & Pembayaran</h1>
+        <p>Lengkapi jadwal sewa dan selesaikan pembayaran untuk mengunci jadwal mobil pilihan Anda.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="container">
+        <!-- Grid Form Pemesanan & Ringkasan Pembayaran -->
+        <div class="kontak-grid" id="area-form-pesan">
+          <!-- Kolom Kiri: Form Detail Sewa -->
+          <div class="box">
+            <h3 class="form-title">1. Detail Penyewaan Mobil</h3>
+            <div class="alert alert-err" id="ps-err"></div>
+            <form id="form-reservasi" onsubmit="return buatPesanan(event)">
+              <label for="ps-mobil">Pilih Kendaraan</label>
+              <select id="ps-mobil" onchange="hitungBiayaSewa()"></select>
+
+              <div class="grid-2 gap-sm">
+                <div>
+                  <label for="ps-mulai">Tanggal Mulai Sewa</label>
+                  <input type="date" id="ps-mulai" onchange="hitungBiayaSewa()">
+                </div>
+                <div>
+                  <label for="ps-selesai">Tanggal Selesai Sewa</label>
+                  <input type="date" id="ps-selesai" onchange="hitungBiayaSewa()">
+                </div>
+              </div>
+
+              <label for="ps-layanan">Pilihan Layanan</label>
+              <select id="ps-layanan" onchange="hitungBiayaSewa()">
+                <option value="Lepas Kunci">Lepas Kunci (Rp 0 / hari)</option>
+                <option value="Dengan Sopir">Dengan Sopir (+Rp 150.000 / hari)</option>
+              </select>
+
+              <label for="ps-catatan">Catatan Tambahan (Opsional)</label>
+              <textarea id="ps-catatan" rows="2" placeholder="Contoh: Jemput di bandara / stasiun pukul 09.00 WIB"></textarea>
+
+              <h3 class="form-title mt-sm">2. Pilih Metode Pembayaran</h3>
+              <div class="pay-options">
+                <label class="pay-option">
+                  <input type="radio" name="metode_bayar" value="QRIS" checked onchange="ubahMetodeBayar()">
+                  <span><b>QRIS Instan</b><small>GoPay, OVO, DANA, ShopeePay, m-Banking</small></span>
+                </label>
+                <label class="pay-option">
+                  <input type="radio" name="metode_bayar" value="BCA Virtual Account" onchange="ubahMetodeBayar()">
+                  <span><b>BCA Virtual Account</b><small>Verifikasi otomatis via ATM / BCA Mobile</small></span>
+                </label>
+                <label class="pay-option">
+                  <input type="radio" name="metode_bayar" value="Mandiri Virtual Account" onchange="ubahMetodeBayar()">
+                  <span><b>Mandiri Virtual Account</b><small>Verifikasi otomatis via Livin' by Mandiri</small></span>
+                </label>
+              </div>
+
+              <!-- Kotak Instruksi Pembayaran -->
+              <div class="pay-detail" id="instruksi-bayar"></div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="btn-submit-pesan">
+                Bayar & Konfirmasi Pesanan
+              </button>
+            </form>
+          </div>
+
+          <!-- Kolom Kanan: Ringkasan Biaya Otomatis -->
+          <div class="box summary-box">
+            <h3 class="form-title">Ringkasan Biaya Sewa</h3>
+            <div class="summary-row">
+              <span>Nama Penyewa</span>
+              <b id="sum-nama">-</b>
+            </div>
+            <div class="summary-row">
+              <span>Unit Kendaraan</span>
+              <b id="sum-mobil">-</b>
+            </div>
+            <div class="summary-row">
+              <span>Tarif Mobil / Hari</span>
+              <b id="sum-tarif">Rp 0</b>
+            </div>
+            <div class="summary-row">
+              <span>Durasi Penyewaan</span>
+              <b id="sum-durasi">0 Hari</b>
+            </div>
+            <div class="summary-row">
+              <span>Layanan Tambahan</span>
+              <b id="sum-layanan">Lepas Kunci</b>
+            </div>
+            <div class="summary-row">
+              <span>Status Jadwal</span>
+              <span id="sum-status"><span class="badge badge-ok">Pilih Tanggal</span></span>
+            </div>
+            <div class="summary-total">
+              <span>Total Pembayaran</span>
+              <b id="sum-total">Rp 0</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Riwayat Pemesanan Pelanggan -->
+        <div class="box mt" id="riwayat">
+          <div class="section-head" style="margin-bottom: 12px;">
+            <div>
+              <span class="label">Riwayat</span>
+              <h2>Pesanan Saya</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Mobil</th>
+                  <th>Tanggal Sewa</th>
+                  <th>Layanan</th>
+                  <th>Total Biaya</th>
+                  <th>Pembayaran</th>
+                  <th>Status Pesanan</th>
+                </tr>
+              </thead>
+              <tbody id="tb-riwayat-pelanggan"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kontak - Sahabat Rental Mobil</title>
-  <meta name="description" content="Hubungi Sahabat Rental Mobil: alamat, telepon, email, jam operasional, dan formulir pemesanan mobil.">
+  <meta name="description" content="Hubungi Sahabat Rental Mobil: lokasi peta Google Maps, telepon, email, jam operasional, dan formulir pesan.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -19,22 +19,22 @@
       <div class="container">
         <span class="label label-light">Kontak</span>
         <h1>Hubungi Kami</h1>
-        <p>Ada pertanyaan atau ingin memesan mobil? Kirim pesan melalui formulir di bawah ini.</p>
+        <p>Ada pertanyaan seputar layanan sewa mobil kami? Kirim pesan melalui formulir di bawah ini.</p>
       </div>
     </div>
 
     <div class="section">
       <div class="container kontak-grid">
-        <!-- Info kontak -->
+        <!-- Info kontak & Google Maps -->
         <div class="box">
           <h3 class="form-title">Informasi Kontak</h3>
           <div class="info-item">
             <div class="info-icon" id="ic-lokasi"></div>
-            <div><b>Alamat Kantor</b><p>Jl. Merdeka No. 45, Bandung, Jawa Barat 40111</p></div>
+            <div><b>Lokasi Kantor</b><p>Universitas Mikroskil, Building B, Medan</p></div>
           </div>
           <div class="info-item">
             <div class="info-icon" id="ic-telepon"></div>
-            <div><b>Telepon / WhatsApp</b><p>+62 812-0000-0000 (Admin)</p></div>
+            <div><b>Telepon / WhatsApp</b><p>+62 812-0000-0000 (Customer Service)</p></div>
           </div>
           <div class="info-item">
             <div class="info-icon" id="ic-email"></div>
@@ -44,17 +44,25 @@
             <div class="info-icon" id="ic-jam"></div>
             <div><b>Jam Operasional</b><p>Senin - Minggu, 07.00 - 21.00 WIB</p></div>
           </div>
-          <div class="map-box">
-            <span id="ic-peta"></span>
-            <p><b>Sahabat Rental Mobil</b><br>Jl. Merdeka No. 45, Bandung</p>
+
+          <div class="map-embed">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3981.9983291637222!2d98.6880525250919!3d3.587857300298984!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x303131b05672220d%3A0xba277a5eddb19abe!2sUniversitas%20Mikroskil%2C%20Building%20B!5e0!3m2!1sen!2sid!4v1776270482699!5m2!1sen!2sid"
+              width="100%"
+              height="240"
+              style="border:0;"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Lokasi Sahabat Rental Mobil">
+            </iframe>
           </div>
         </div>
 
-        <!-- Form kontak / pemesanan -->
+        <!-- Form kontak murni untuk pertanyaan/pesan -->
         <div class="box">
-          <h3 class="form-title">Kirim Pesan / Pemesanan</h3>
+          <h3 class="form-title">Kirim Pesan / Pertanyaan</h3>
           <div class="alert alert-err" id="kn-err"></div>
-          <div class="alert alert-info" id="kn-info"></div>
           <form onsubmit="return kirimPesan(event)">
             <div class="grid-2 gap-sm">
               <div>
@@ -74,15 +82,15 @@
               <div>
                 <label for="kn-subjek">Subjek</label>
                 <select id="kn-subjek">
-                  <option>Pemesanan Mobil</option>
                   <option>Pertanyaan Umum</option>
+                  <option>Konsultasi Armada</option>
                   <option>Kerja Sama</option>
                   <option>Lainnya</option>
                 </select>
               </div>
             </div>
             <label for="kn-pesan">Pesan</label>
-            <textarea id="kn-pesan" rows="5" placeholder="Tulis pesan atau rencana pemesanan Anda..."></textarea>
+            <textarea id="kn-pesan" rows="5" placeholder="Tulis pertanyaan atau pesan Anda di sini..."></textarea>
             <button type="submit" class="btn btn-primary btn-block" id="kn-kirim">Kirim Pesan</button>
           </form>
         </div>

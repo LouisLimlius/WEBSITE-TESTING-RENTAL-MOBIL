@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Pengelola - Sahabat Rental Mobil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="navbar-root"></div>
+
+  <main>
+    <div class="page-head">
+      <div class="container">
+        <span class="label label-light" id="db-role-label">Dashboard</span>
+        <h1 id="db-title">Dashboard Operasional</h1>
+        <p id="db-subtitle">Kelola armada, validasi pesanan pelanggan, dan pantau laporan transaksi.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="container">
+        <!-- Ringkasan Angka (Tampil untuk Admin & Owner) -->
+        <div class="grid-3" style="margin-bottom: 24px;">
+          <div class="box stat-card">
+            <span class="muted">Total Armada</span>
+            <b id="st-unit">0 Unit</b>
+          </div>
+          <div class="box stat-card">
+            <span class="muted">Total Pesanan Masuk</span>
+            <b id="st-pesanan">0 Pesanan</b>
+          </div>
+          <div class="box stat-card">
+            <span class="muted">Total Pendapatan Masuk</span>
+            <b id="st-pendapatan">Rp 0</b>
+          </div>
+        </div>
+
+        <!-- PANEL KHUSUS ADMIN: Kelola Armada -->
+        <div class="box" id="panel-admin-mobil">
+          <h3 class="form-title">Kelola Data Kendaraan</h3>
+          <div class="alert alert-err" id="adm-err"></div>
+          <form class="filter-grid" onsubmit="return simpanMobilAdmin(event)">
+            <input type="hidden" id="adm-id">
+            <div>
+              <label for="adm-nama">Nama Mobil</label>
+              <input type="text" id="adm-nama" placeholder="Contoh: Honda HR-V">
+            </div>
+            <div>
+              <label for="adm-tipe">Tipe</label>
+              <select id="adm-tipe">
+                <option>MPV</option>
+                <option>SUV</option>
+                <option>City Car</option>
+                <option>Sedan</option>
+              </select>
+            </div>
+            <div>
+              <label for="adm-transmisi">Transmisi</label>
+              <select id="adm-transmisi">
+                <option>Matic</option>
+                <option>Manual</option>
+              </select>
+            </div>
+            <div>
+              <label for="adm-tarif">Tarif / Hari (Rp)</label>
+              <input type="number" id="adm-tarif" placeholder="400000">
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary btn-block" id="adm-btn-simpan">Tambah Unit</button>
+            </div>
+          </form>
+
+          <div class="table-wrap mt-sm">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nama Kendaraan</th>
+                  <th>Tipe</th>
+                  <th>Transmisi</th>
+                  <th>Tarif / Hari</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tb-admin-mobil"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PANEL RESERVASI & TRANSAKSI (Admin bisa ubah status, Owner melihat laporan) -->
+        <div class="box">
+          <div class="section-head" style="margin-bottom: 12px;">
+            <div>
+              <h3 id="judul-tabel-pesanan">Daftar Pesanan & Transaksi Pembayaran</h3>
+            </div>
+            <button class="btn btn-outline btn-small no-print" onclick="window.print()">Cetak Laporan</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Pelanggan</th>
+                  <th>Kendaraan</th>
+                  <th>Jadwal Sewa</th>
+                  <th>Layanan</th>
+                  <th>Metode Bayar</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th id="kolom-aksi-admin">Tindakan Admin</th>
+                </tr>
+              </thead>
+              <tbody id="tb-admin-pesanan"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
