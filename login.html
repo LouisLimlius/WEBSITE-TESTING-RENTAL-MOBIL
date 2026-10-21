@@ -17,7 +17,6 @@
   <main>
     <div class="section">
       <div class="container auth">
-        <!-- Panel samping -->
         <div class="auth-side">
           <span class="label label-light">Akses Akun</span>
           <h2>Satu halaman untuk masuk dan mendaftar</h2>
@@ -29,8 +28,6 @@
             <li id="cl-3">Riwayat sewa dapat dilihat kapan saja</li>
           </ul>
         </div>
-
-        <!-- Panel form dengan tab Masuk / Daftar -->
         <div class="auth-form">
           <div class="auth-tabs">
             <button type="button" id="tab-masuk" class="active" onclick="pindahTab('masuk')">Masuk</button>
@@ -40,7 +37,6 @@
           <h1 id="auth-judul">Login</h1>
           <p class="muted" id="auth-sub">Masukkan email dan password yang sudah terdaftar.</p>
 
-          <!-- FORM MASUK -->
           <div id="form-masuk">
             <div class="alert alert-err" id="lg-err"></div>
             <form onsubmit="return login(event)">
@@ -52,7 +48,6 @@
             </form>
           </div>
 
-          <!-- FORM DAFTAR -->
           <div id="form-daftar" class="hidden">
             <div class="alert alert-err" id="rg-err"></div>
             <form onsubmit="return daftar(event)">
