@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Katalog Kendaraan - Sahabat Rental Mobil</title>
   <meta name="description" content="Katalog armada Sahabat Rental Mobil: cek ketersediaan mobil berdasarkan tanggal sewa, filter transmisi, dan cari nama mobil.">
+  <meta name="theme-color" content="#272B2E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23CFDC66'/%3E%3Cpath d='M6 19L9 12C9.5 10.8 10.6 10 12 10H20C21.4 10 22.5 10.8 23 12L26 19' stroke='%23272B2E' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Crect x='5' y='17.5' width='22' height='7' rx='3.5' fill='%23272B2E'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -23,10 +25,10 @@
       </div>
     </div>
 
-    <div class="section">
+    <section class="section">
       <div class="container">
-        <div class="box filter-box no-print">
-          <div class="alert alert-err" id="kt-err"></div>
+        <form class="box filter-box no-print" onsubmit="event.preventDefault(); tampilKatalog();" novalidate>
+          <div class="alert alert-err" id="kt-err" role="alert" aria-live="assertive"></div>
           <div class="filter-grid">
             <div>
               <label for="kt-mulai">Tanggal Mulai</label>
@@ -45,22 +47,22 @@
               </select>
             </div>
             <div>
-              <label for="kt-cari">Cari Nama Mobil</label>
-              <input type="text" id="kt-cari" placeholder="Contoh: Avanza" oninput="tampilKatalog()">
+              <label for="kt-cari">Cari Nama / Tipe Mobil</label>
+              <input type="search" id="kt-cari" placeholder="Contoh: Avanza" oninput="tampilKatalog()" autocomplete="off">
             </div>
             <div>
-              <button class="btn btn-dark btn-block" onclick="tampilKatalog()">Cek Ketersediaan</button>
+              <button type="submit" class="btn btn-dark btn-block">Cek Ketersediaan</button>
             </div>
           </div>
-        </div>
-        <p class="result-info" id="kt-info"></p>
+        </form>
+        <p class="result-info" id="kt-info" aria-live="polite"></p>
         <div class="grid-3" id="kt-list"></div>
       </div>
-    </div>
+    </section>
   </main>
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

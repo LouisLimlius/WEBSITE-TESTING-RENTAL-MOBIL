@@ -5,72 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login / Daftar - Sahabat Rental Mobil</title>
   <meta name="description" content="Masuk atau buat akun pelanggan Sahabat Rental Mobil dalam satu halaman.">
+  <meta name="theme-color" content="#272B2E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23CFDC66'/%3E%3Cpath d='M6 19L9 12C9.5 10.8 10.6 10 12 10H20C21.4 10 22.5 10.8 23 12L26 19' stroke='%23272B2E' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Crect x='5' y='17.5' width='22' height='7' rx='3.5' fill='%23272B2E'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
   <div id="navbar-root"></div>
 
   <main>
-    <div class="section">
+    <section class="section">
       <div class="container auth">
+        <!-- Panel samping -->
         <div class="auth-side">
           <span class="label label-light">Akses Akun</span>
           <h2>Satu halaman untuk masuk dan mendaftar</h2>
           <p>Gunakan akun Anda untuk memilih jadwal sewa kendaraan, melakukan pembayaran instan, dan memantau status pemesanan.</p>
 
           <ul class="check-list" id="info-daftar">
-            <li id="cl-1">Pemesanan & pembayaran tercatat otomatis</li>
+            <li id="cl-1">Pemesanan &amp; pembayaran tercatat otomatis</li>
             <li id="cl-2">Jadwal mobil langsung terkunci setelah dipesan</li>
             <li id="cl-3">Riwayat sewa dapat dilihat kapan saja</li>
           </ul>
         </div>
+
+        <!-- Panel form dengan tab Masuk / Daftar -->
         <div class="auth-form">
-          <div class="auth-tabs">
-            <button type="button" id="tab-masuk" class="active" onclick="pindahTab('masuk')">Masuk</button>
-            <button type="button" id="tab-daftar" onclick="pindahTab('daftar')">Daftar</button>
+          <div class="auth-tabs" role="tablist" aria-label="Pilih Login atau Daftar">
+            <button type="button" id="tab-masuk" class="active" role="tab" aria-selected="true" aria-controls="form-masuk" onclick="pindahTab('masuk', true)">Masuk</button>
+            <button type="button" id="tab-daftar" role="tab" aria-selected="false" aria-controls="form-daftar" onclick="pindahTab('daftar', true)">Daftar</button>
           </div>
 
           <h1 id="auth-judul">Login</h1>
           <p class="muted" id="auth-sub">Masukkan email dan password yang sudah terdaftar.</p>
 
-          <div id="form-masuk">
-            <div class="alert alert-err" id="lg-err"></div>
-            <form onsubmit="return login(event)">
+          <!-- FORM MASUK -->
+          <div id="form-masuk" role="tabpanel" aria-labelledby="tab-masuk">
+            <div class="alert alert-err" id="lg-err" role="alert" aria-live="assertive"></div>
+            <form onsubmit="return login(event)" novalidate>
               <label for="lg-email">Email</label>
-              <input type="email" id="lg-email" placeholder="nama@email.com">
+              <input type="email" id="lg-email" placeholder="nama@email.com" autocomplete="username" maxlength="80">
               <label for="lg-pass">Password</label>
-              <input type="password" id="lg-pass" placeholder="Masukkan password">
+              <input type="password" id="lg-pass" placeholder="Masukkan password" autocomplete="current-password">
               <button type="submit" class="btn btn-primary btn-block">Login</button>
             </form>
           </div>
 
-          <div id="form-daftar" class="hidden">
-            <div class="alert alert-err" id="rg-err"></div>
-            <form onsubmit="return daftar(event)">
+          <!-- FORM DAFTAR -->
+          <div id="form-daftar" class="hidden" role="tabpanel" aria-labelledby="tab-daftar">
+            <div class="alert alert-err" id="rg-err" role="alert" aria-live="assertive"></div>
+            <form onsubmit="return daftar(event)" novalidate>
               <label for="rg-nama">Nama Lengkap</label>
-              <input type="text" id="rg-nama" placeholder="Nama sesuai KTP">
+              <input type="text" id="rg-nama" placeholder="Nama sesuai KTP" autocomplete="name" maxlength="60">
               <div class="grid-2 gap-sm">
                 <div>
                   <label for="rg-email">Email</label>
-                  <input type="email" id="rg-email" placeholder="nama@email.com">
+                  <input type="email" id="rg-email" placeholder="nama@email.com" autocomplete="email" maxlength="80">
                 </div>
                 <div>
                   <label for="rg-hp">Nomor HP</label>
-                  <input type="text" id="rg-hp" placeholder="08xxxxxxxxxx">
+                  <input type="tel" id="rg-hp" placeholder="08xxxxxxxxxx" autocomplete="tel" inputmode="numeric" maxlength="16">
                 </div>
               </div>
               <div class="grid-2 gap-sm">
                 <div>
                   <label for="rg-pass">Password</label>
-                  <input type="password" id="rg-pass" placeholder="Minimal 6 karakter">
+                  <input type="password" id="rg-pass" placeholder="Minimal 6 karakter" autocomplete="new-password">
                 </div>
                 <div>
                   <label for="rg-pass2">Ulangi Password</label>
-                  <input type="password" id="rg-pass2" placeholder="Ulangi password">
+                  <input type="password" id="rg-pass2" placeholder="Ulangi password" autocomplete="new-password">
                 </div>
               </div>
               <button type="submit" class="btn btn-primary btn-block">Daftar Akun</button>
@@ -78,11 +85,11 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Beranda - Sahabat Rental Mobil</title>
   <meta name="description" content="Sewa mobil jadi mudah: cek ketersediaan sesuai tanggal, lihat armada, dan pesan langsung secara online.">
+  <meta name="theme-color" content="#272B2E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23CFDC66'/%3E%3Cpath d='M6 19L9 12C9.5 10.8 10.6 10 12 10H20C21.4 10 22.5 10.8 23 12L26 19' stroke='%23272B2E' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Crect x='5' y='17.5' width='22' height='7' rx='3.5' fill='%23272B2E'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+  <!-- Navbar dirender bersama oleh js/script.js -->
   <div id="navbar-root"></div>
 
   <main>
-    <div class="hero">
+    <!-- ================= HERO ================= -->
+    <section class="hero">
       <div class="container hero-grid">
         <div class="hero-text">
           <span class="label label-light">Rental Mobil Online</span>
@@ -31,20 +35,21 @@
             <div><b>Online</b><span>Pembayaran instan</span></div>
           </div>
         </div>
-        <div class="search-card">
+        <form class="search-card" onsubmit="return cariBeranda(event)" novalidate>
           <h3>Cek Ketersediaan</h3>
           <p class="muted">Pilih tanggal sewa untuk melihat mobil yang masih tersedia.</p>
-          <div class="alert alert-err" id="bk-err"></div>
+          <div class="alert alert-err" id="bk-err" role="alert" aria-live="assertive"></div>
           <label for="bk-mulai">Tanggal Mulai</label>
           <input type="date" id="bk-mulai">
           <label for="bk-selesai">Tanggal Selesai</label>
           <input type="date" id="bk-selesai">
-          <button class="btn btn-dark btn-block" onclick="cariBeranda()">Cari Mobil Tersedia</button>
-        </div>
+          <button type="submit" class="btn btn-dark btn-block">Cari Mobil Tersedia</button>
+        </form>
       </div>
-    </div>
+    </section>
 
-    <div class="section">
+    <!-- ================= KEUNGGULAN ================= -->
+    <section class="section">
       <div class="container">
         <span class="label">Keunggulan</span>
         <h2>Kenapa memilih Sahabat Rental Mobil?</h2>
@@ -56,7 +61,7 @@
           </div>
           <div class="feature">
             <div class="feature-icon" id="fi-2"></div>
-            <h3>Biaya & Pembayaran Jelas</h3>
+            <h3>Biaya &amp; Pembayaran Jelas</h3>
             <p>Total biaya dihitung otomatis sesuai durasi dan pilihan layanan, lengkap dengan pembayaran via QRIS atau Transfer Bank.</p>
           </div>
           <div class="feature">
@@ -66,9 +71,10 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section section-alt">
+    <!-- ================= MOBIL PILIHAN ================= -->
+    <section class="section section-alt">
       <div class="container">
         <div class="section-head">
           <div><span class="label">Armada</span><h2>Mobil Pilihan</h2></div>
@@ -76,21 +82,23 @@
         </div>
         <div class="grid-3" id="bk-list"></div>
       </div>
-    </div>
+    </section>
 
-    <div class="section">
+    <!-- ================= CARA SEWA ================= -->
+    <section class="section">
       <div class="container">
         <span class="label">Cara Sewa</span>
         <h2>Tiga langkah untuk menyewa mobil</h2>
-        <div class="steps mt-sm">
-          <div class="step"><span>01</span><h3>Daftar dan Login</h3><p>Buat akun pelanggan lewat halaman Login / Daftar.</p></div>
-          <div class="step"><span>02</span><h3>Pilih Mobil dan Tanggal</h3><p>Cek mobil yang tersedia pada tanggal yang diinginkan di katalog.</p></div>
-          <div class="step"><span>03</span><h3>Pesan & Bayar</h3><p>Pilih layanan sewa, cek total tagihan otomatis, lalu lakukan pembayaran.</p></div>
-        </div>
+        <ol class="steps mt-sm">
+          <li class="step"><span>01</span><h3>Daftar dan Login</h3><p>Buat akun pelanggan lewat halaman Login / Daftar.</p></li>
+          <li class="step"><span>02</span><h3>Pilih Mobil dan Tanggal</h3><p>Cek mobil yang tersedia pada tanggal yang diinginkan di katalog.</p></li>
+          <li class="step"><span>03</span><h3>Pesan &amp; Bayar</h3><p>Pilih layanan sewa, cek total tagihan otomatis, lalu lakukan pembayaran.</p></li>
+        </ol>
       </div>
-    </div>
+    </section>
 
-    <div class="section" style="padding-top: 0;">
+    <!-- ================= CTA ================= -->
+    <section class="section section-flush">
       <div class="container">
         <div class="cta">
           <div>
@@ -100,11 +108,12 @@
           <a href="kontak.html" class="btn btn-primary">Hubungi Kami</a>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
+  <!-- Footer dirender bersama oleh js/script.js -->
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

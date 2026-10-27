@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pemesanan & Pembayaran - Sahabat Rental Mobil</title>
+  <title>Pemesanan &amp; Pembayaran - Sahabat Rental Mobil</title>
   <meta name="description" content="Formulir pemesanan mobil, perhitungan biaya otomatis, dan pembayaran online Sahabat Rental Mobil.">
+  <meta name="theme-color" content="#272B2E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23CFDC66'/%3E%3Cpath d='M6 19L9 12C9.5 10.8 10.6 10 12 10H20C21.4 10 22.5 10.8 23 12L26 19' stroke='%23272B2E' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Crect x='5' y='17.5' width='22' height='7' rx='3.5' fill='%23272B2E'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -18,18 +20,20 @@
     <div class="page-head">
       <div class="container">
         <span class="label label-light">Reservasi Online</span>
-        <h1>Pemesanan & Pembayaran</h1>
+        <h1>Pemesanan &amp; Pembayaran</h1>
         <p>Lengkapi jadwal sewa dan selesaikan pembayaran untuk mengunci jadwal mobil pilihan Anda.</p>
       </div>
     </div>
 
-    <div class="section">
+    <section class="section">
       <div class="container">
+        <!-- Grid Form Pemesanan & Ringkasan Pembayaran -->
         <div class="kontak-grid" id="area-form-pesan">
+          <!-- Kolom Kiri: Form Detail Sewa -->
           <div class="box">
             <h3 class="form-title">1. Detail Penyewaan Mobil</h3>
-            <div class="alert alert-err" id="ps-err"></div>
-            <form id="form-reservasi" onsubmit="return buatPesanan(event)">
+            <div class="alert alert-err" id="ps-err" role="alert" aria-live="assertive"></div>
+            <form id="form-reservasi" onsubmit="return buatPesanan(event)" novalidate>
               <label for="ps-mobil">Pilih Kendaraan</label>
               <select id="ps-mobil" onchange="hitungBiayaSewa()"></select>
 
@@ -51,10 +55,10 @@
               </select>
 
               <label for="ps-catatan">Catatan Tambahan (Opsional)</label>
-              <textarea id="ps-catatan" rows="2" placeholder="Contoh: Jemput di bandara / stasiun pukul 09.00 WIB"></textarea>
+              <textarea id="ps-catatan" rows="2" maxlength="300" placeholder="Contoh: Jemput di bandara / stasiun pukul 09.00 WIB"></textarea>
 
               <h3 class="form-title mt-sm">2. Pilih Metode Pembayaran</h3>
-              <div class="pay-options">
+              <div class="pay-options" role="radiogroup" aria-label="Metode pembayaran">
                 <label class="pay-option">
                   <input type="radio" name="metode_bayar" value="QRIS" checked onchange="ubahMetodeBayar()">
                   <span><b>QRIS Instan</b><small>GoPay, OVO, DANA, ShopeePay, m-Banking</small></span>
@@ -69,15 +73,17 @@
                 </label>
               </div>
 
-              <div class="pay-detail" id="instruksi-bayar"></div>
+              <!-- Kotak Instruksi Pembayaran -->
+              <div class="pay-detail" id="instruksi-bayar" aria-live="polite"></div>
 
               <button type="submit" class="btn btn-primary btn-block" id="btn-submit-pesan">
-                Bayar & Konfirmasi Pesanan
+                Bayar &amp; Konfirmasi Pesanan
               </button>
             </form>
           </div>
 
-          <div class="box summary-box">
+          <!-- Kolom Kanan: Ringkasan Biaya Otomatis -->
+          <aside class="box summary-box" aria-live="polite">
             <h3 class="form-title">Ringkasan Biaya Sewa</h3>
             <div class="summary-row">
               <span>Nama Penyewa</span>
@@ -101,17 +107,18 @@
             </div>
             <div class="summary-row">
               <span>Status Jadwal</span>
-              <span id="sum-status"><span class="badge badge-ok">Pilih Tanggal</span></span>
+              <span id="sum-status"><span class="badge badge-dark">Pilih Tanggal</span></span>
             </div>
             <div class="summary-total">
               <span>Total Pembayaran</span>
               <b id="sum-total">Rp 0</b>
             </div>
-          </div>
+          </aside>
         </div>
 
+        <!-- Tabel Riwayat Pemesanan Pelanggan -->
         <div class="box mt" id="riwayat">
-          <div class="section-head" style="margin-bottom: 12px;">
+          <div class="section-head compact">
             <div>
               <span class="label">Riwayat</span>
               <h2>Pesanan Saya</h2>
@@ -121,13 +128,14 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Kode</th>
-                  <th>Mobil</th>
-                  <th>Tanggal Sewa</th>
-                  <th>Layanan</th>
-                  <th>Total Biaya</th>
-                  <th>Pembayaran</th>
-                  <th>Status Pesanan</th>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Mobil</th>
+                  <th scope="col">Tanggal Sewa</th>
+                  <th scope="col">Layanan</th>
+                  <th scope="col">Total Biaya</th>
+                  <th scope="col">Pembayaran</th>
+                  <th scope="col">Status Pesanan</th>
+                  <th scope="col">Aksi</th>
                 </tr>
               </thead>
               <tbody id="tb-riwayat-pelanggan"></tbody>
@@ -135,11 +143,11 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

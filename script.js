@@ -3,10 +3,40 @@
    ========================================================= */
 'use strict';
 
+/* ============ 0. KONSTANTA ============ */
+var PREFIX = 'srm_';
+var BIAYA_SOPIR = 150000;
+var STATUS_PESANAN = ['Menunggu Konfirmasi', 'Dikonfirmasi', 'Sedang Disewa', 'Selesai', 'Dibatalkan'];
+var STATUS_TIDAK_AKTIF = ['Selesai', 'Dibatalkan'];
+var KELAS_STATUS = {
+  'Menunggu Konfirmasi': 'badge-warn',
+  'Dikonfirmasi': 'badge-ok',
+  'Sedang Disewa': 'badge-dark',
+  'Selesai': 'badge-done',
+  'Dibatalkan': 'badge-no'
+};
+var INFO_BAYAR = {
+  'QRIS': {
+    judul: 'Pembayaran QRIS Instan',
+    isi: 'Kode QRIS Merchant: <b>SRM-QRIS-20268891</b>. Pembayaran otomatis terverifikasi saat Anda menekan tombol bayar di bawah.'
+  },
+  'BCA Virtual Account': {
+    judul: 'Nomor BCA Virtual Account: 8801 0812 0000 2026',
+    isi: 'A.n. Sahabat Rental Mobil. Tagihan otomatis lunas setelah konfirmasi pembayaran.'
+  },
+  'Mandiri Virtual Account': {
+    judul: 'Nomor Mandiri Virtual Account: 8902 0812 0000 2026',
+    isi: 'A.n. Sahabat Rental Mobil. Tagihan otomatis lunas setelah konfirmasi pembayaran.'
+  }
+};
+
+/* Tanggal yang sedang dipilih di katalog (dipakai saat menekan tombol "Pesan") */
+var ktTanggal = { mulai: '', selesai: '' };
+
 /* ============ 1. PENYIMPANAN & DATA AWAL (localStorage) ============ */
 function ambil(k, d) {
   try {
-    var v = localStorage.getItem('srm_' + k);
+    var v = localStorage.getItem(PREFIX + k);
     return v ? JSON.parse(v) : d;
   } catch (e) {
     return d;
@@ -14,11 +44,23 @@ function ambil(k, d) {
 }
 
 function simpan(k, v) {
-  localStorage.setItem('srm_' + k, JSON.stringify(v));
+  try {
+    localStorage.setItem(PREFIX + k, JSON.stringify(v));
+    return true;
+  } catch (e) {
+    toast('Gagal menyimpan data. Penyimpanan browser penuh atau diblokir.', 'err');
+    return false;
+  }
+}
+
+function hapusData(k) {
+  try {
+    localStorage.removeItem(PREFIX + k);
+  } catch (e) { /* abaikan */ }
 }
 
 (function seed() {
-  if (!ambil('cars', null)) {
+  if (!Array.isArray(ambil('cars', null))) {
     simpan('cars', [
       { id: 1, nama: 'Toyota Avanza', tipe: 'MPV', kursi: 7, transmisi: 'Manual', tarif: 350000 },
       { id: 2, nama: 'Honda Brio', tipe: 'City Car', kursi: 5, transmisi: 'Matic', tarif: 300000 },
@@ -28,21 +70,21 @@ function simpan(k, v) {
       { id: 6, nama: 'Toyota Fortuner', tipe: 'SUV', kursi: 7, transmisi: 'Matic', tarif: 900000 }
     ]);
   }
-  if (!ambil('users', null)) {
+  if (!Array.isArray(ambil('users', null))) {
     simpan('users', [
       { nama: 'Admin Sahabat', email: 'admin@sahabat.com', hp: '081200000001', password: 'admin123', role: 'admin' },
       { nama: 'Owner Sahabat', email: 'owner@sahabat.com', hp: '081200000002', password: 'owner123', role: 'owner' },
       { nama: 'Pelanggan Uji', email: 'pelanggan@sahabat.com', hp: '081200000003', password: 'pelanggan123', role: 'pelanggan' }
     ]);
   }
-  if (!ambil('bookings', null)) simpan('bookings', []);
-  if (!ambil('pesan', null)) simpan('pesan', []);
+  if (!Array.isArray(ambil('bookings', null))) simpan('bookings', []);
+  if (!Array.isArray(ambil('pesan', null))) simpan('pesan', []);
 })();
 
 function cariMobil(id) {
   var daftar = ambil('cars', []);
   for (var i = 0; i < daftar.length; i++) {
-    if (daftar[i].id == id) return daftar[i];
+    if (Number(daftar[i].id) === Number(id)) return daftar[i];
   }
   return null;
 }
@@ -78,8 +120,12 @@ function hariIni() {
   return d.toISOString().slice(0, 10);
 }
 
+function formatTanggalValid(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !isNaN(new Date(s + 'T00:00:00').getTime());
+}
+
 function tgl(s) {
-  if (!s) return '-';
+  if (!formatTanggalValid(s)) return '-';
   return new Date(s + 'T00:00:00').toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
@@ -95,29 +141,77 @@ function emailValid(e) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 }
 
+/* Hapus spasi, titik, dan tanda hubung agar "0812-3456-7890" tetap diterima */
+function normalisasiHp(h) {
+  return String(h || '').replace(/[\s.\-]/g, '');
+}
+
 function hpValid(h) {
-  return /^[0-9]{10,13}$/.test(h);
+  return /^[0-9]{10,13}$/.test(normalisasiHp(h));
 }
 
 function validasiTanggal(m, s) {
   if (!m || !s) return 'Tanggal mulai dan tanggal selesai wajib diisi.';
+  if (!formatTanggalValid(m) || !formatTanggalValid(s)) return 'Format tanggal tidak valid.';
   if (m < hariIni()) return 'Tanggal mulai tidak boleh sebelum hari ini.';
   if (s < m) return 'Tanggal selesai tidak boleh lebih awal dari tanggal mulai.';
   return '';
 }
 
-function mobilTersedia(carId, m, s) {
+/* Menjaga agar tanggal selesai tidak pernah lebih awal dari tanggal mulai */
+function sinkronTanggal(idMulai, idSelesai) {
+  var a = $(idMulai);
+  var b = $(idSelesai);
+  if (!a || !b) return;
+  var min = hariIni();
+  a.min = min;
+  b.min = a.value && a.value > min ? a.value : min;
+  if (a.value && b.value && b.value < a.value) b.value = a.value;
+}
+
+function pesananAktif(b) {
+  return STATUS_TIDAK_AKTIF.indexOf(b.status) === -1;
+}
+
+/* kecualiKode: abaikan pesanan tertentu (dipakai saat mengaktifkan ulang pesanan) */
+function mobilTersedia(carId, m, s, kecualiKode) {
   if (!m || !s) return true;
   var bookings = ambil('bookings', []);
   for (var i = 0; i < bookings.length; i++) {
     var b = bookings[i];
-    if (b.carId == carId && b.status !== 'Dibatalkan' && b.status !== 'Selesai') {
-      if (!(s < b.mulai || m > b.selesai)) {
-        return false;
-      }
-    }
+    if (Number(b.carId) !== Number(carId)) continue;
+    if (kecualiKode && b.kode === kecualiKode) continue;
+    if (!pesananAktif(b)) continue;
+    if (!(s < b.mulai || m > b.selesai)) return false;
   }
   return true;
+}
+
+function jumlahPesananAktifMobil(carId) {
+  var bookings = ambil('bookings', []);
+  var n = 0;
+  for (var i = 0; i < bookings.length; i++) {
+    if (Number(bookings[i].carId) === Number(carId) && pesananAktif(bookings[i])) n++;
+  }
+  return n;
+}
+
+function hitungTotal(tarif, hari, layanan) {
+  var sopir = layanan === 'Dengan Sopir' ? BIAYA_SOPIR * hari : 0;
+  return { sopir: sopir, total: (Number(tarif) * hari) + sopir };
+}
+
+function kodeBaru(daftar) {
+  var maks = 100;
+  for (var i = 0; i < daftar.length; i++) {
+    var n = parseInt(String(daftar[i].kode || '').replace(/\D/g, ''), 10);
+    if (n > maks) maks = n;
+  }
+  return 'SRM-' + (maks + 1);
+}
+
+function badgeStatus(status) {
+  return '<span class="badge ' + (KELAS_STATUS[status] || 'badge-dark') + '">' + esc(status) + '</span>';
 }
 
 function tampilError(id, pesan) {
@@ -125,10 +219,22 @@ function tampilError(id, pesan) {
   if (!e) return;
   e.textContent = pesan || '';
   e.classList.toggle('show', !!pesan);
+  if (pesan && e.scrollIntoView) e.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function pastikanToast() {
+  if ($('toast') || !document.body) return;
+  var t = document.createElement('div');
+  t.id = 'toast';
+  t.className = 'toast';
+  t.setAttribute('role', 'status');
+  t.setAttribute('aria-live', 'polite');
+  document.body.appendChild(t);
 }
 
 var toastTimer = null;
 function toast(pesan, tipe) {
+  pastikanToast();
   var t = $('toast');
   if (!t) return;
   t.textContent = pesan;
@@ -139,24 +245,41 @@ function toast(pesan, tipe) {
   }, 3200);
 }
 
-function toggleMenu() {
+function toggleMenu(paksa) {
   var nav = $('nav');
-  if (nav) nav.classList.toggle('open');
+  if (!nav) return;
+  var buka = typeof paksa === 'boolean' ? paksa : !nav.classList.contains('open');
+  nav.classList.toggle('open', buka);
+  var btn = $('menu-toggle');
+  if (btn) btn.setAttribute('aria-expanded', buka ? 'true' : 'false');
+}
+
+function pindahHalaman(url, jeda) {
+  setTimeout(function () {
+    location.href = url;
+  }, jeda || 0);
 }
 
 /* ============ 3. AUTENTIKASI & HAK AKSES ============ */
 function userAktif() {
-  return ambil('session', null);
+  var u = ambil('session', null);
+  return u && typeof u === 'object' && u.email && u.role ? u : null;
 }
 
 function adalahPengelola() {
   var u = userAktif();
-  return u && (u.role === 'admin' || u.role === 'owner');
+  return !!u && (u.role === 'admin' || u.role === 'owner');
+}
+
+function adalahAdmin() {
+  var u = userAktif();
+  return !!u && u.role === 'admin';
 }
 
 function prosesLogin(email, pass) {
   email = String(email || '').trim().toLowerCase();
   if (!email || !pass) return { err: 'Email dan password wajib diisi.' };
+  if (!emailValid(email)) return { err: 'Format email tidak valid.' };
   var users = ambil('users', []);
   var u = null;
   for (var i = 0; i < users.length; i++) {
@@ -166,25 +289,31 @@ function prosesLogin(email, pass) {
     }
   }
   if (!u) return { err: 'Email atau password salah.' };
-  simpan('session', { nama: u.nama, email: u.email, hp: u.hp, role: u.role });
+  if (!simpan('session', { nama: u.nama, email: u.email, hp: u.hp, role: u.role })) {
+    return { err: 'Sesi login tidak dapat disimpan di browser ini.' };
+  }
   return { ok: true, user: u };
 }
 
 function prosesDaftar(data) {
-  var nama = String(data.nama || '').trim();
+  var nama = String(data.nama || '').trim().replace(/\s+/g, ' ');
   var email = String(data.email || '').trim().toLowerCase();
-  var hp = String(data.hp || '').trim();
+  var hp = normalisasiHp(data.hp);
   var pass = data.pass || '';
   var pass2 = data.pass2 || '';
   var users = ambil('users', []);
   var sudahAda = false;
 
   for (var i = 0; i < users.length; i++) {
-    if (users[i].email === email) sudahAda = true;
+    if (users[i].email === email) {
+      sudahAda = true;
+      break;
+    }
   }
 
   var pesan = '';
   if (!nama || !email || !hp || !pass || !pass2) pesan = 'Semua kolom wajib diisi.';
+  else if (nama.length < 3) pesan = 'Nama lengkap minimal 3 karakter.';
   else if (!emailValid(email)) pesan = 'Format email tidak valid.';
   else if (!hpValid(hp)) pesan = 'Nomor HP harus berupa angka 10-13 digit.';
   else if (pass.length < 6) pesan = 'Password minimal 6 karakter.';
@@ -193,21 +322,19 @@ function prosesDaftar(data) {
 
   if (pesan) return { err: pesan };
   users.push({ nama: nama, email: email, hp: hp, password: pass, role: 'pelanggan' });
-  simpan('users', users);
+  if (!simpan('users', users)) return { err: 'Data akun gagal disimpan.' };
   return { ok: true, email: email };
 }
 
 function logout() {
-  localStorage.removeItem('srm_session');
+  hapusData('session');
   toast('Anda berhasil logout.');
-  setTimeout(function () {
-    location.href = 'login.html';
-  }, 400);
+  pindahHalaman('login.html', 400);
 }
 
 /* ============ 4. LOGO WEBSITE & KARTU MOBIL ============ */
 function logoSvg() {
-  return '<svg viewBox="0 0 32 32" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" aria-hidden="true">' +
+  return '<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
     '<path d="M5 19.5L8.2 11.5C8.8 10 10.2 9 11.8 9H20.2C21.8 9 23.2 10 23.8 11.5L27 19.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>' +
     '<rect x="3.5" y="17.5" width="25" height="7.5" rx="3.5" fill="currentColor"/>' +
     '<circle cx="9.5" cy="21.2" r="2" fill="#CFDC66"/>' +
@@ -235,7 +362,7 @@ function ikon(nama, size) {
 }
 
 function kartuMobil(c, badgeHtml, aksiHtml) {
-  return '<div class="car-card">' +
+  return '<article class="car-card">' +
     '<div class="car-top">' +
       '<span class="type-tag">' + esc(c.tipe || 'Mobil') + '</span>' +
       (badgeHtml || '') +
@@ -243,7 +370,7 @@ function kartuMobil(c, badgeHtml, aksiHtml) {
     '<div class="car-body">' +
       '<h3>' + esc(c.nama) + '</h3>' +
       '<div class="chips">' +
-        '<span class="chip">' + (c.kursi || 7) + ' Kursi</span>' +
+        '<span class="chip">' + (Number(c.kursi) || 7) + ' Kursi</span>' +
         '<span class="chip">Transmisi ' + esc(c.transmisi) + '</span>' +
         '<span class="chip">Lepas Kunci / Sopir</span>' +
       '</div>' +
@@ -252,17 +379,17 @@ function kartuMobil(c, badgeHtml, aksiHtml) {
         (aksiHtml || '') +
       '</div>' +
     '</div>' +
-  '</div>';
+  '</article>';
 }
 
 function tombolPesanKartu(carId, tersedia) {
   if (adalahPengelola()) {
-    return '<button class="btn btn-small" disabled title="Admin & Owner tidak dapat memesan">Khusus Pelanggan</button>';
+    return '<button type="button" class="btn btn-small" disabled title="Admin & Owner tidak dapat memesan">Khusus Pelanggan</button>';
   }
   if (tersedia === false) {
-    return '<button class="btn btn-small" disabled>Tidak Tersedia</button>';
+    return '<button type="button" class="btn btn-small" disabled>Tidak Tersedia</button>';
   }
-  return '<button class="btn btn-primary btn-small" onclick="pesanMobil(' + carId + ')">Pesan</button>';
+  return '<button type="button" class="btn btn-primary btn-small" onclick="pesanMobil(' + Number(carId) + ')">Pesan</button>';
 }
 
 /* ============ 5. NAVBAR & FOOTER BERSAMA ============ */
@@ -288,27 +415,27 @@ function renderLayout() {
 
   var linkHtml = '';
   for (var i = 0; i < menu.length; i++) {
-    var cls = menu[i][0] === berkas ? 'active' : '';
-    linkHtml += '<a href="' + menu[i][0] + '" class="' + cls + '">' + menu[i][1] + '</a>';
+    var aktif = menu[i][0] === berkas;
+    linkHtml += '<a href="' + menu[i][0] + '"' + (aktif ? ' class="active" aria-current="page"' : '') + '>' + menu[i][1] + '</a>';
   }
 
   var chip = '';
   if (u) {
     var namaDepan = u.nama ? u.nama.split(' ')[0] : 'User';
     chip = '<div class="user-chip"><span>' + esc(namaDepan) + ' <small>(' + esc(u.role) + ')</small></span>' +
-      '<button class="btn-logout" onclick="logout()">' + ikon('keluar', 13) + ' Logout</button></div>';
+      '<button type="button" class="btn-logout" onclick="logout()">' + ikon('keluar', 13) + ' Logout</button></div>';
   }
 
   var navRoot = $('navbar-root');
   if (navRoot) {
     navRoot.outerHTML = '<header class="navbar no-print">' +
       '<div class="container navbar-inner">' +
-        '<a href="index.html" class="logo">' +
+        '<a href="index.html" class="logo" aria-label="Sahabat Rental Mobil - Beranda">' +
           '<span class="logo-mark">' + logoSvg() + '</span>' +
           '<span>Sahabat <b>Rental Mobil</b></span>' +
         '</a>' +
-        '<button class="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu">' + ikon('menu') + ' Menu</button>' +
-        '<nav class="nav" id="nav">' + linkHtml + chip + '</nav>' +
+        '<button type="button" class="menu-toggle" id="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu" aria-controls="nav" aria-expanded="false">' + ikon('menu') + ' Menu</button>' +
+        '<nav class="nav" id="nav" aria-label="Navigasi utama">' + linkHtml + chip + '</nav>' +
       '</div>' +
     '</header>';
   }
@@ -336,32 +463,55 @@ function renderLayout() {
           '<p>Medan, Sumatera Utara</p>' +
         '</div>' +
       '</div>' +
-      '<div class="footer-bottom">&copy; 2026 Sahabat Rental Mobil - Kelompok SIOMAY</div>' +
+      '<div class="footer-bottom">&copy; ' + new Date().getFullYear() + ' Sahabat Rental Mobil - Kelompok SIOMAY</div>' +
     '</footer>';
   }
 
-  if (!$('toast')) {
-    var t = document.createElement('div');
-    t.id = 'toast';
-    t.className = 'toast';
-    document.body.appendChild(t);
+  /* Tautan "lewati ke konten" untuk pengguna keyboard / pembaca layar */
+  var main = document.querySelector('main');
+  if (main) {
+    if (!main.id) main.id = 'konten';
+    main.setAttribute('tabindex', '-1');
+    if (!document.querySelector('.skip-link')) {
+      document.body.insertAdjacentHTML('afterbegin', '<a href="#' + main.id + '" class="skip-link">Lewati ke konten utama</a>');
+    }
   }
+
+  pastikanToast();
+
+  /* Tutup menu HP saat menekan Escape atau klik di luar navbar */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') toggleMenu(false);
+  });
+  document.addEventListener('click', function (e) {
+    var nav = $('nav');
+    if (nav && nav.classList.contains('open') && !e.target.closest('.navbar')) toggleMenu(false);
+  });
 }
 
 /* ============ 6. HALAMAN BERANDA ============ */
-function cariBeranda() {
+function cariBeranda(e) {
+  if (e) e.preventDefault();
   var m = $('bk-mulai').value;
   var s = $('bk-selesai').value;
   var pesan = validasiTanggal(m, s);
-  if (pesan) return tampilError('bk-err', pesan);
+  if (pesan) {
+    tampilError('bk-err', pesan);
+    return false;
+  }
   tampilError('bk-err', '');
   location.href = 'katalog.html?mulai=' + encodeURIComponent(m) + '&selesai=' + encodeURIComponent(s);
+  return false;
 }
 
 function pesanMobil(id) {
   var u = userAktif();
   if (u && (u.role === 'admin' || u.role === 'owner')) {
     toast('Akun Admin dan Owner tidak dapat melakukan pemesanan mobil.', 'err');
+    return;
+  }
+  if (!cariMobil(id)) {
+    toast('Data mobil tidak ditemukan. Silakan muat ulang halaman.', 'err');
     return;
   }
   var q = new URLSearchParams({ mobil: id });
@@ -372,9 +522,7 @@ function pesanMobil(id) {
   if (!u) {
     simpan('pending_order', q.toString());
     toast('Silakan login sebagai pelanggan terlebih dahulu untuk memesan.');
-    setTimeout(function () {
-      location.href = 'login.html';
-    }, 500);
+    pindahHalaman('login.html', 500);
     return;
   }
   location.href = 'pesan.html?' + q.toString();
@@ -386,30 +534,37 @@ function initBeranda() {
   setHtml('fi-3', ikon('pantau', 22));
 
   if (userAktif() && $('hero-btn-daftar')) {
-    $('hero-btn-daftar').style.display = 'none';
+    $('hero-btn-daftar').classList.add('hidden');
   }
 
   var cars = ambil('cars', []);
   setText('bk-unit', cars.length);
-  if ($('bk-mulai')) $('bk-mulai').min = hariIni();
-  if ($('bk-selesai')) $('bk-selesai').min = hariIni();
+  sinkronTanggal('bk-mulai', 'bk-selesai');
+  if ($('bk-mulai')) {
+    $('bk-mulai').addEventListener('change', function () {
+      sinkronTanggal('bk-mulai', 'bk-selesai');
+    });
+  }
 
   var html = '';
   var batas = Math.min(cars.length, 3);
   for (var i = 0; i < batas; i++) {
     html += kartuMobil(cars[i], '<span class="badge badge-ok">Siap Jalan</span>', tombolPesanKartu(cars[i].id, true));
   }
+  if (!html) {
+    html = '<div class="box empty">Belum ada unit kendaraan yang tersedia.</div>';
+  }
   setHtml('bk-list', html);
 }
 
 /* ============ 7. HALAMAN KATALOG ============ */
-var ktTanggal = { mulai: '', selesai: '' };
-
 function tampilKatalog() {
+  sinkronTanggal('kt-mulai', 'kt-selesai');
   var m = $('kt-mulai') ? $('kt-mulai').value : '';
   var s = $('kt-selesai') ? $('kt-selesai').value : '';
-  var pesan = '';
-  if (m || s) pesan = validasiTanggal(m, s);
+
+  /* Validasi hanya jika kedua tanggal sudah dipilih agar tidak mengganggu saat mengisi */
+  var pesan = (m && s) ? validasiTanggal(m, s) : '';
   tampilError('kt-err', pesan);
 
   ktTanggal = (!pesan && m && s) ? { mulai: m, selesai: s } : { mulai: '', selesai: '' };
@@ -423,7 +578,7 @@ function tampilKatalog() {
   for (var i = 0; i < semuaMobil.length; i++) {
     var c = semuaMobil[i];
     var cocokTr = !tr || c.transmisi === tr;
-    var cocokCari = !cari || c.nama.toLowerCase().indexOf(cari) !== -1;
+    var cocokCari = !cari || String(c.nama).toLowerCase().indexOf(cari) !== -1 || String(c.tipe).toLowerCase().indexOf(cari) !== -1;
     if (cocokTr && cocokCari) daftar.push(c);
   }
 
@@ -444,73 +599,73 @@ function tampilKatalog() {
   }
   setHtml('kt-list', html);
 
-  var infoTeks = cekTanggal
-    ? jmlTersedia + ' dari ' + daftar.length + ' mobil tersedia untuk ' + tgl(m) + ' s/d ' + tgl(s) + ' (' + jumlahHari(m, s) + ' hari).'
-    : 'Menampilkan ' + daftar.length + ' unit mobil. Pilih tanggal mulai & selesai untuk mengecek jadwal kosong.';
+  var infoTeks;
+  if (cekTanggal) {
+    infoTeks = jmlTersedia + ' dari ' + daftar.length + ' mobil tersedia untuk ' + tgl(m) + ' s/d ' + tgl(s) + ' (' + jumlahHari(m, s) + ' hari).';
+  } else if ((m && !s) || (!m && s)) {
+    infoTeks = 'Menampilkan ' + daftar.length + ' unit mobil. Lengkapi tanggal ' + (m ? 'selesai' : 'mulai') + ' untuk mengecek jadwal kosong.';
+  } else {
+    infoTeks = 'Menampilkan ' + daftar.length + ' unit mobil. Pilih tanggal mulai & selesai untuk mengecek jadwal kosong.';
+  }
   setText('kt-info', infoTeks);
 }
 
 function initKatalog() {
   var q = new URLSearchParams(location.search);
-  if ($('kt-mulai')) {
-    $('kt-mulai').min = hariIni();
-    $('kt-mulai').value = q.get('mulai') || '';
-  }
-  if ($('kt-selesai')) {
-    $('kt-selesai').min = hariIni();
-    $('kt-selesai').value = q.get('selesai') || '';
-  }
+  var mulai = q.get('mulai');
+  var selesai = q.get('selesai');
+  if ($('kt-mulai')) $('kt-mulai').value = formatTanggalValid(mulai) ? mulai : '';
+  if ($('kt-selesai')) $('kt-selesai').value = formatTanggalValid(selesai) ? selesai : '';
   tampilKatalog();
 }
 
 /* ============ 8. HALAMAN PEMESANAN & PEMBAYARAN (pesan.html) ============ */
+function metodeTerpilih() {
+  var el = document.querySelector('input[name="metode_bayar"]:checked');
+  return el && INFO_BAYAR[el.value] ? el.value : 'QRIS';
+}
+
 function ubahMetodeBayar() {
-  var metodeEl = document.querySelector('input[name="metode_bayar"]:checked');
-  var metode = metodeEl ? metodeEl.value : 'QRIS';
   var box = $('instruksi-bayar');
   if (!box) return;
-
-  if (metode === 'QRIS') {
-    box.innerHTML = '<p><b>Pembayaran QRIS Instan</b></p>' +
-      '<p style="margin:0;font-size:13px;">Kode QRIS Merchant: <b>SRM-QRIS-20268891</b>. Pembayaran otomatis terverifikasi saat Anda menekan tombol bayar di bawah.</p>';
-  } else if (metode === 'BCA Virtual Account') {
-    box.innerHTML = '<p><b>Nomor BCA Virtual Account: 8801 0812 0000 2026</b></p>' +
-      '<p style="margin:0;font-size:13px;">A.n. Sahabat Rental Mobil. Tagihan otomatis lunas setelah konfirmasi pembayaran.</p>';
-  } else {
-    box.innerHTML = '<p><b>Nomor Mandiri Virtual Account: 8902 0812 0000 2026</b></p>' +
-      '<p style="margin:0;font-size:13px;">A.n. Sahabat Rental Mobil. Tagihan otomatis lunas setelah konfirmasi pembayaran.</p>';
-  }
+  var info = INFO_BAYAR[metodeTerpilih()];
+  box.innerHTML = '<p><b>' + info.judul + '</b></p><p class="pay-note">' + info.isi + '</p>';
 }
 
 function hitungBiayaSewa() {
   if (!$('ps-mobil')) return;
+  sinkronTanggal('ps-mulai', 'ps-selesai');
+
   var carId = $('ps-mobil').value;
   var m = $('ps-mulai').value;
   var s = $('ps-selesai').value;
   var layanan = $('ps-layanan').value;
   var mobil = cariMobil(carId);
+  var tombol = $('btn-submit-pesan');
 
   setText('sum-mobil', mobil ? mobil.nama : '-');
   setText('sum-tarif', mobil ? rupiah(mobil.tarif) : 'Rp 0');
   setText('sum-layanan', layanan);
 
-  if (!mobil || !m || !s || s < m) {
+  if (!mobil || validasiTanggal(m, s)) {
     setText('sum-durasi', '0 Hari');
     setText('sum-total', 'Rp 0');
     setHtml('sum-status', '<span class="badge badge-dark">Pilih Tanggal Valid</span>');
+    if (tombol) tombol.disabled = !mobil;
     return;
   }
 
   var hari = jumlahHari(m, s);
-  var tambahanSopir = layanan === 'Dengan Sopir' ? 150000 * hari : 0;
-  var total = (mobil.tarif * hari) + tambahanSopir;
+  var biaya = hitungTotal(mobil.tarif, hari, layanan);
   var tersedia = mobilTersedia(carId, m, s);
 
   setText('sum-durasi', hari + ' Hari');
-  setText('sum-total', rupiah(total));
+  setText('sum-layanan', biaya.sopir ? layanan + ' (+' + rupiah(biaya.sopir) + ')' : layanan);
+  setText('sum-total', rupiah(biaya.total));
   setHtml('sum-status', tersedia
     ? '<span class="badge badge-ok">Jadwal Tersedia</span>'
     : '<span class="badge badge-no">Jadwal Bentrok / Penuh</span>');
+  if (tombol) tombol.disabled = !tersedia;
 }
 
 function buatPesanan(e) {
@@ -528,11 +683,15 @@ function buatPesanan(e) {
   var carId = Number($('ps-mobil').value);
   var m = $('ps-mulai').value;
   var s = $('ps-selesai').value;
-  var layanan = $('ps-layanan').value;
-  var catatan = $('ps-catatan').value.trim();
-  var metodeEl = document.querySelector('input[name="metode_bayar"]:checked');
-  var metode = metodeEl ? metodeEl.value : 'QRIS';
+  var layanan = $('ps-layanan').value === 'Dengan Sopir' ? 'Dengan Sopir' : 'Lepas Kunci';
+  var catatan = $('ps-catatan').value.trim().slice(0, 300);
+  var metode = metodeTerpilih();
+  var mobil = cariMobil(carId);
 
+  if (!mobil) {
+    tampilError('ps-err', 'Silakan pilih kendaraan yang valid.');
+    return false;
+  }
   var errTgl = validasiTanggal(m, s);
   if (errTgl) {
     tampilError('ps-err', errTgl);
@@ -540,16 +699,16 @@ function buatPesanan(e) {
   }
   if (!mobilTersedia(carId, m, s)) {
     tampilError('ps-err', 'Maaf, mobil ini sudah dipesan pada tanggal tersebut. Silakan pilih tanggal atau mobil lain.');
+    hitungBiayaSewa();
     return false;
   }
   tampilError('ps-err', '');
 
-  var mobil = cariMobil(carId);
   var hari = jumlahHari(m, s);
-  var total = (mobil.tarif * hari) + (layanan === 'Dengan Sopir' ? 150000 * hari : 0);
+  var biaya = hitungTotal(mobil.tarif, hari, layanan);
 
   var daftar = ambil('bookings', []);
-  var kode = 'SRM-' + String(daftar.length + 101);
+  var kode = kodeBaru(daftar);
   daftar.unshift({
     kode: kode,
     carId: mobil.id,
@@ -564,16 +723,40 @@ function buatPesanan(e) {
     metodeBayar: metode,
     statusBayar: 'Lunas',
     status: 'Menunggu Konfirmasi',
-    total: total,
-    catatan: catatan
+    total: biaya.total,
+    catatan: catatan,
+    dibuat: new Date().toISOString()
   });
-  simpan('bookings', daftar);
+  if (!simpan('bookings', daftar)) return false;
 
   toast('Pembayaran berhasil! Pesanan ' + kode + ' telah tercatat.');
   $('ps-catatan').value = '';
   hitungBiayaSewa();
   renderRiwayatPelanggan();
+  if ($('riwayat')) $('riwayat').scrollIntoView({ behavior: 'smooth', block: 'start' });
   return false;
+}
+
+function batalkanPesananSaya(kode) {
+  var u = userAktif();
+  if (!u) return;
+  var daftar = ambil('bookings', []);
+  for (var i = 0; i < daftar.length; i++) {
+    var b = daftar[i];
+    if (b.kode !== kode || b.emailPelanggan !== u.email) continue;
+    if (b.status !== 'Menunggu Konfirmasi') {
+      toast('Pesanan ini sudah diproses sehingga tidak dapat dibatalkan.', 'err');
+      renderRiwayatPelanggan();
+      return;
+    }
+    if (!confirm('Batalkan pesanan ' + kode + '? Jadwal mobil akan dibuka kembali dan dana dikembalikan.')) return;
+    b.status = 'Dibatalkan';
+    b.statusBayar = 'Dikembalikan';
+    if (simpan('bookings', daftar)) toast('Pesanan ' + kode + ' berhasil dibatalkan.');
+    renderRiwayatPelanggan();
+    hitungBiayaSewa();
+    return;
+  }
 }
 
 function renderRiwayatPelanggan() {
@@ -585,20 +768,23 @@ function renderRiwayatPelanggan() {
   var html = '';
   for (var i = 0; i < semua.length; i++) {
     var b = semua[i];
-    if (b.emailPelanggan === u.email) {
-      html += '<tr>' +
-        '<td><b>' + esc(b.kode) + '</b></td>' +
-        '<td>' + esc(b.namaMobil) + '</td>' +
-        '<td>' + tgl(b.mulai) + ' - ' + tgl(b.selesai) + ' (' + b.hari + ' hari)</td>' +
-        '<td>' + esc(b.layanan) + '</td>' +
-        '<td><b>' + rupiah(b.total) + '</b></td>' +
-        '<td><span class="badge badge-ok">' + esc(b.metodeBayar) + ' (' + esc(b.statusBayar) + ')</span></td>' +
-        '<td><span class="badge badge-dark">' + esc(b.status) + '</span></td>' +
-      '</tr>';
-    }
+    if (b.emailPelanggan !== u.email) continue;
+    var aksi = b.status === 'Menunggu Konfirmasi'
+      ? '<button type="button" class="btn btn-outline btn-small" data-kode="' + esc(b.kode) + '" onclick="batalkanPesananSaya(this.dataset.kode)">Batalkan</button>'
+      : '<span class="muted">-</span>';
+    html += '<tr>' +
+      '<td><b>' + esc(b.kode) + '</b></td>' +
+      '<td>' + esc(b.namaMobil) + '</td>' +
+      '<td>' + tgl(b.mulai) + ' - ' + tgl(b.selesai) + ' (' + Number(b.hari || 0) + ' hari)</td>' +
+      '<td>' + esc(b.layanan) + '</td>' +
+      '<td><b>' + rupiah(b.total) + '</b></td>' +
+      '<td><span class="badge ' + (b.statusBayar === 'Lunas' ? 'badge-ok' : 'badge-done') + '">' + esc(b.metodeBayar) + ' (' + esc(b.statusBayar) + ')</span></td>' +
+      '<td>' + badgeStatus(b.status) + '</td>' +
+      '<td>' + aksi + '</td>' +
+    '</tr>';
   }
   if (!html) {
-    html = '<tr><td colspan="7" class="center muted">Belum ada riwayat pemesanan.</td></tr>';
+    html = '<tr><td colspan="8" class="center muted">Belum ada riwayat pemesanan.</td></tr>';
   }
   tbody.innerHTML = html;
 }
@@ -607,35 +793,42 @@ function initPesan() {
   var u = userAktif();
   if (!u) {
     toast('Silakan login terlebih dahulu untuk memesan mobil.');
-    setTimeout(function () {
-      location.href = 'login.html';
-    }, 400);
+    pindahHalaman('login.html', 400);
     return;
   }
   if (u.role === 'admin' || u.role === 'owner') {
     toast('Akun Admin dan Owner tidak dapat melakukan pemesanan mobil.', 'err');
-    setTimeout(function () {
-      location.href = 'dashboard.html';
-    }, 500);
+    pindahHalaman('dashboard.html', 500);
     return;
   }
 
   setText('sum-nama', u.nama);
   var cars = ambil('cars', []);
+  if (!cars.length) {
+    setHtml('ps-mobil', '<option value="">Belum ada kendaraan tersedia</option>');
+    if ($('btn-submit-pesan')) $('btn-submit-pesan').disabled = true;
+    tampilError('ps-err', 'Belum ada unit kendaraan yang dapat dipesan saat ini.');
+    ubahMetodeBayar();
+    renderRiwayatPelanggan();
+    return;
+  }
+
   var opsiHtml = '';
   for (var i = 0; i < cars.length; i++) {
     var c = cars[i];
-    opsiHtml += '<option value="' + c.id + '">' + esc(c.nama) + ' — ' + rupiah(c.tarif) + '/hari (' + esc(c.transmisi) + ')</option>';
+    opsiHtml += '<option value="' + Number(c.id) + '">' + esc(c.nama) + ' — ' + rupiah(c.tarif) + '/hari (' + esc(c.transmisi) + ')</option>';
   }
   setHtml('ps-mobil', opsiHtml);
 
   var q = new URLSearchParams(location.search);
-  var besok = hariIni();
-  $('ps-mulai').min = besok;
-  $('ps-selesai').min = besok;
-  if (q.get('mobil')) $('ps-mobil').value = q.get('mobil');
-  $('ps-mulai').value = q.get('mulai') || besok;
-  $('ps-selesai').value = q.get('selesai') || besok;
+  var hari = hariIni();
+  var mobilQ = q.get('mobil');
+  var mulaiQ = q.get('mulai');
+  var selesaiQ = q.get('selesai');
+
+  if (mobilQ && cariMobil(mobilQ)) $('ps-mobil').value = String(Number(mobilQ));
+  $('ps-mulai').value = formatTanggalValid(mulaiQ) && mulaiQ >= hari ? mulaiQ : hari;
+  $('ps-selesai').value = formatTanggalValid(selesaiQ) && selesaiQ >= $('ps-mulai').value ? selesaiQ : $('ps-mulai').value;
 
   ubahMetodeBayar();
   hitungBiayaSewa();
@@ -643,55 +836,158 @@ function initPesan() {
 }
 
 /* ============ 9. HALAMAN DASHBOARD ADMIN & OWNER ============ */
+function resetFormMobil() {
+  if (!$('adm-id')) return;
+  $('adm-id').value = '';
+  $('adm-nama').value = '';
+  $('adm-tarif').value = '';
+  if ($('adm-kursi')) $('adm-kursi').value = '7';
+  $('adm-tipe').selectedIndex = 0;
+  $('adm-transmisi').selectedIndex = 0;
+  setText('adm-btn-simpan', 'Tambah Unit');
+  if ($('adm-btn-batal')) $('adm-btn-batal').classList.add('hidden');
+  tampilError('adm-err', '');
+}
+
 function simpanMobilAdmin(e) {
   e.preventDefault();
-  var nama = $('adm-nama').value.trim();
+  if (!adalahAdmin()) {
+    toast('Hanya Admin yang dapat mengelola data kendaraan.', 'err');
+    return false;
+  }
+
+  var id = Number($('adm-id').value) || 0;
+  var nama = $('adm-nama').value.trim().replace(/\s+/g, ' ');
   var tipe = $('adm-tipe').value;
   var transmisi = $('adm-transmisi').value;
+  var kursi = $('adm-kursi') ? parseInt($('adm-kursi').value, 10) : 7;
   var tarif = Number($('adm-tarif').value);
+  var cars = ambil('cars', []);
 
-  if (!nama || !tarif || tarif <= 0) {
-    tampilError('adm-err', 'Nama mobil dan tarif harian wajib diisi dengan benar.');
+  var duplikat = false;
+  for (var d = 0; d < cars.length; d++) {
+    if (Number(cars[d].id) !== id && String(cars[d].nama).toLowerCase() === nama.toLowerCase()) {
+      duplikat = true;
+      break;
+    }
+  }
+
+  var err = '';
+  if (!nama) err = 'Nama mobil wajib diisi.';
+  else if (nama.length > 60) err = 'Nama mobil maksimal 60 karakter.';
+  else if (duplikat) err = 'Nama mobil sudah ada di daftar armada.';
+  else if (!kursi || kursi < 2 || kursi > 20) err = 'Jumlah kursi harus antara 2 sampai 20.';
+  else if (!tarif || tarif <= 0 || Math.floor(tarif) !== tarif) err = 'Tarif harian harus berupa angka bulat lebih dari 0.';
+
+  if (err) {
+    tampilError('adm-err', err);
     return false;
   }
   tampilError('adm-err', '');
 
-  var cars = ambil('cars', []);
-  var maxId = 0;
-  for (var i = 0; i < cars.length; i++) {
-    if (cars[i].id > maxId) maxId = cars[i].id;
+  if (id) {
+    var ketemu = false;
+    for (var i = 0; i < cars.length; i++) {
+      if (Number(cars[i].id) === id) {
+        cars[i].nama = nama;
+        cars[i].tipe = tipe;
+        cars[i].transmisi = transmisi;
+        cars[i].kursi = kursi;
+        cars[i].tarif = tarif;
+        ketemu = true;
+        break;
+      }
+    }
+    if (!ketemu) {
+      tampilError('adm-err', 'Data kendaraan yang diedit sudah tidak ada.');
+      return false;
+    }
+  } else {
+    var maxId = 0;
+    for (var j = 0; j < cars.length; j++) {
+      if (Number(cars[j].id) > maxId) maxId = Number(cars[j].id);
+    }
+    cars.push({ id: maxId + 1, nama: nama, tipe: tipe, kursi: kursi, transmisi: transmisi, tarif: tarif });
   }
-  cars.push({ id: maxId + 1, nama: nama, tipe: tipe, kursi: 7, transmisi: transmisi, tarif: tarif });
-  simpan('cars', cars);
 
-  $('adm-nama').value = '';
-  $('adm-tarif').value = '';
-  toast('Unit kendaraan berhasil ditambahkan.');
+  if (!simpan('cars', cars)) return false;
+  toast(id ? 'Data kendaraan berhasil diperbarui.' : 'Unit kendaraan berhasil ditambahkan.');
+  resetFormMobil();
   renderDashboard();
   return false;
 }
 
+function editMobilAdmin(id) {
+  var c = cariMobil(id);
+  if (!c || !$('adm-id')) return;
+  $('adm-id').value = c.id;
+  $('adm-nama').value = c.nama;
+  $('adm-tipe').value = c.tipe;
+  $('adm-transmisi').value = c.transmisi;
+  if ($('adm-kursi')) $('adm-kursi').value = Number(c.kursi) || 7;
+  $('adm-tarif').value = c.tarif;
+  setText('adm-btn-simpan', 'Simpan Perubahan');
+  if ($('adm-btn-batal')) $('adm-btn-batal').classList.remove('hidden');
+  tampilError('adm-err', '');
+  $('panel-admin-mobil').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('adm-nama').focus({ preventScroll: true });
+}
+
 function hapusMobilAdmin(id) {
+  if (!adalahAdmin()) return;
+  var c = cariMobil(id);
+  if (!c) return;
+
+  var aktif = jumlahPesananAktifMobil(id);
+  if (aktif > 0) {
+    toast('Tidak dapat menghapus ' + c.nama + ': masih ada ' + aktif + ' pesanan aktif.', 'err');
+    return;
+  }
+  if (!confirm('Hapus unit "' + c.nama + '" dari daftar armada?')) return;
+
   var cars = ambil('cars', []);
   var baru = [];
   for (var i = 0; i < cars.length; i++) {
-    if (cars[i].id != id) baru.push(cars[i]);
+    if (Number(cars[i].id) !== Number(id)) baru.push(cars[i]);
   }
-  simpan('cars', baru);
+  if (!simpan('cars', baru)) return;
+  if (Number($('adm-id').value) === Number(id)) resetFormMobil();
   toast('Unit kendaraan dihapus.');
   renderDashboard();
 }
 
 function ubahStatusPesanan(kode, statusBaru) {
+  if (!adalahAdmin() || STATUS_PESANAN.indexOf(statusBaru) === -1) {
+    renderDashboard();
+    return;
+  }
   var daftar = ambil('bookings', []);
+  var b = null;
   for (var i = 0; i < daftar.length; i++) {
     if (daftar[i].kode === kode) {
-      daftar[i].status = statusBaru;
+      b = daftar[i];
       break;
     }
   }
-  simpan('bookings', daftar);
-  toast('Status pesanan ' + kode + ' diperbarui menjadi ' + statusBaru + '.');
+  if (!b || b.status === statusBaru) return;
+
+  /* Cegah bentrok jadwal saat pesanan Selesai/Dibatalkan diaktifkan kembali */
+  var diaktifkanLagi = !pesananAktif(b) && STATUS_TIDAK_AKTIF.indexOf(statusBaru) === -1;
+  if (diaktifkanLagi && !mobilTersedia(b.carId, b.mulai, b.selesai, b.kode)) {
+    toast('Tidak dapat mengaktifkan kembali ' + kode + ': jadwal mobil sudah dipesan pelanggan lain.', 'err');
+    renderDashboard();
+    return;
+  }
+  if (statusBaru === 'Dibatalkan' && !confirm('Batalkan pesanan ' + kode + '? Jadwal mobil akan dibuka kembali.')) {
+    renderDashboard();
+    return;
+  }
+
+  b.status = statusBaru;
+  b.statusBayar = statusBaru === 'Dibatalkan' ? 'Dikembalikan' : 'Lunas';
+  if (simpan('bookings', daftar)) {
+    toast('Status pesanan ' + kode + ' diperbarui menjadi ' + statusBaru + '.');
+  }
   renderDashboard();
 }
 
@@ -705,6 +1001,9 @@ function renderDashboard() {
   var isOwner = u.role === 'owner';
   setText('db-role-label', isOwner ? 'Dashboard Owner' : 'Dashboard Admin');
   setText('db-title', isOwner ? 'Laporan & Monitoring Usaha' : 'Pengelolaan Armada & Reservasi');
+  setText('db-subtitle', isOwner
+    ? 'Pantau ringkasan armada, pesanan, dan pendapatan usaha secara real-time.'
+    : 'Kelola armada, validasi pesanan pelanggan, dan pantau laporan transaksi.');
 
   if (isOwner) {
     if ($('panel-admin-mobil')) $('panel-admin-mobil').classList.add('hidden');
@@ -732,40 +1031,45 @@ function renderDashboard() {
         '<td><b>' + esc(c.nama) + '</b></td>' +
         '<td>' + esc(c.tipe) + '</td>' +
         '<td>' + esc(c.transmisi) + '</td>' +
+        '<td>' + (Number(c.kursi) || 7) + '</td>' +
         '<td>' + rupiah(c.tarif) + '</td>' +
-        '<td><button class="btn btn-outline btn-small" onclick="hapusMobilAdmin(' + c.id + ')">Hapus</button></td>' +
+        '<td><div class="aksi-group">' +
+          '<button type="button" class="btn btn-outline btn-small" onclick="editMobilAdmin(' + Number(c.id) + ')">Edit</button>' +
+          '<button type="button" class="btn btn-outline btn-small btn-danger" onclick="hapusMobilAdmin(' + Number(c.id) + ')">Hapus</button>' +
+        '</div></td>' +
       '</tr>';
+    }
+    if (!htmlMobil) {
+      htmlMobil = '<tr><td colspan="6" class="center muted">Belum ada unit kendaraan.</td></tr>';
     }
     $('tb-admin-mobil').innerHTML = htmlMobil;
   }
 
   var htmlPesanan = '';
-  var statusOpsi = ['Menunggu Konfirmasi', 'Dikonfirmasi', 'Sedang Disewa', 'Selesai', 'Dibatalkan'];
-
   for (var k = 0; k < bookings.length; k++) {
     var b = bookings[k];
     var kolomAksi = '';
 
     if (!isOwner) {
-      var selectHtml = '<select onchange="ubahStatusPesanan(\'' + esc(b.kode) + '\', this.value)" style="margin:0;padding:6px 8px;font-size:13px;">';
-      for (var s = 0; s < statusOpsi.length; s++) {
-        var st = statusOpsi[s];
+      var selectHtml = '<select class="select-sm" data-kode="' + esc(b.kode) + '" onchange="ubahStatusPesanan(this.dataset.kode, this.value)" aria-label="Ubah status pesanan ' + esc(b.kode) + '">';
+      for (var s = 0; s < STATUS_PESANAN.length; s++) {
+        var st = STATUS_PESANAN[s];
         var sel = b.status === st ? ' selected' : '';
         selectHtml += '<option' + sel + '>' + st + '</option>';
       }
       selectHtml += '</select>';
-      kolomAksi = '<td>' + selectHtml + '</td>';
+      kolomAksi = '<td class="kolom-aksi">' + selectHtml + '</td>';
     }
 
     htmlPesanan += '<tr>' +
       '<td><b>' + esc(b.kode) + '</b></td>' +
       '<td>' + esc(b.namaPelanggan) + '<br><small>' + esc(b.hpPelanggan) + '</small></td>' +
-      '<td>' + esc(b.namaMobil) + '</td>' +
-      '<td>' + tgl(b.mulai) + ' - ' + tgl(b.selesai) + '</td>' +
+      '<td>' + esc(b.namaMobil) + (b.catatan ? '<br><small title="Catatan pelanggan">' + esc(b.catatan) + '</small>' : '') + '</td>' +
+      '<td>' + tgl(b.mulai) + ' - ' + tgl(b.selesai) + '<br><small>' + Number(b.hari || 0) + ' hari</small></td>' +
       '<td>' + esc(b.layanan) + '</td>' +
-      '<td><span class="badge badge-ok">' + esc(b.metodeBayar) + '</span></td>' +
+      '<td><span class="badge ' + (b.statusBayar === 'Lunas' ? 'badge-ok' : 'badge-done') + '">' + esc(b.metodeBayar) + '</span></td>' +
       '<td><b>' + rupiah(b.total) + '</b></td>' +
-      '<td><span class="badge badge-dark">' + esc(b.status) + '</span></td>' +
+      '<td>' + badgeStatus(b.status) + '</td>' +
       kolomAksi +
     '</tr>';
   }
@@ -778,10 +1082,16 @@ function renderDashboard() {
 }
 
 /* ============ 10. HALAMAN LOGIN & DAFTAR ============ */
-function pindahTab(tab) {
+function pindahTab(tab, fokus) {
   var masuk = tab === 'masuk';
-  if ($('tab-masuk')) $('tab-masuk').classList.toggle('active', masuk);
-  if ($('tab-daftar')) $('tab-daftar').classList.toggle('active', !masuk);
+  if ($('tab-masuk')) {
+    $('tab-masuk').classList.toggle('active', masuk);
+    $('tab-masuk').setAttribute('aria-selected', masuk ? 'true' : 'false');
+  }
+  if ($('tab-daftar')) {
+    $('tab-daftar').classList.toggle('active', !masuk);
+    $('tab-daftar').setAttribute('aria-selected', masuk ? 'false' : 'true');
+  }
   if ($('form-masuk')) $('form-masuk').classList.toggle('hidden', !masuk);
   if ($('form-daftar')) $('form-daftar').classList.toggle('hidden', masuk);
   setText('auth-judul', masuk ? 'Login' : 'Registrasi');
@@ -791,6 +1101,10 @@ function pindahTab(tab) {
   tampilError('lg-err', '');
   tampilError('rg-err', '');
   history.replaceState(null, '', masuk ? '#masuk' : '#daftar');
+  if (fokus) {
+    var input = $(masuk ? 'lg-email' : 'rg-nama');
+    if (input) input.focus();
+  }
 }
 
 function login(e) {
@@ -798,22 +1112,19 @@ function login(e) {
   var hasil = prosesLogin($('lg-email').value, $('lg-pass').value);
   if (hasil.err) {
     tampilError('lg-err', hasil.err);
+    $('lg-pass').value = '';
     return false;
   }
+  tampilError('lg-err', '');
 
-  toast('Login berhasil. Selamat datang, ' + hasil.user.nama.split(' ')[0] + '!');
+  toast('Login berhasil. Selamat datang, ' + String(hasil.user.nama).split(' ')[0] + '!');
   var pending = ambil('pending_order', null);
-  localStorage.removeItem('srm_pending_order');
+  hapusData('pending_order');
 
-  setTimeout(function () {
-    if (hasil.user.role === 'admin' || hasil.user.role === 'owner') {
-      location.href = 'dashboard.html';
-    } else if (pending) {
-      location.href = 'pesan.html?' + pending;
-    } else {
-      location.href = 'index.html';
-    }
-  }, 500);
+  var tujuan = 'index.html';
+  if (hasil.user.role === 'admin' || hasil.user.role === 'owner') tujuan = 'dashboard.html';
+  else if (typeof pending === 'string' && pending) tujuan = 'pesan.html?' + pending;
+  pindahHalaman(tujuan, 500);
   return false;
 }
 
@@ -831,6 +1142,9 @@ function daftar(e) {
     return false;
   }
   toast('Registrasi berhasil. Silakan login.');
+  ['rg-nama', 'rg-email', 'rg-hp', 'rg-pass', 'rg-pass2'].forEach(function (id) {
+    if ($(id)) $(id).value = '';
+  });
   pindahTab('masuk');
   $('lg-email').value = hasil.email;
   $('lg-pass').value = '';
@@ -840,13 +1154,13 @@ function daftar(e) {
 
 function initAuth() {
   if (userAktif()) {
-    location.replace('index.html');
+    location.replace(adalahPengelola() ? 'dashboard.html' : 'index.html');
     return;
   }
   var ids = ['cl-1', 'cl-2', 'cl-3'];
   for (var i = 0; i < ids.length; i++) {
     var li = $(ids[i]);
-    if (li) li.innerHTML = ikon('cek', 14) + li.innerHTML;
+    if (li) li.insertAdjacentHTML('afterbegin', ikon('cek', 14));
   }
   if (location.hash === '#daftar') pindahTab('daftar');
 }
@@ -855,8 +1169,8 @@ function initAuth() {
 function kirimPesan(e) {
   e.preventDefault();
   var nama = $('kn-nama').value.trim();
-  var email = $('kn-email').value.trim();
-  var hp = $('kn-hp').value.trim();
+  var email = $('kn-email').value.trim().toLowerCase();
+  var hp = normalisasiHp($('kn-hp').value);
   var subjek = $('kn-subjek').value;
   var pesan = $('kn-pesan').value.trim();
 
@@ -865,6 +1179,7 @@ function kirimPesan(e) {
   else if (!emailValid(email)) err = 'Format email tidak valid.';
   else if (hp && !hpValid(hp)) err = 'Nomor HP harus berupa angka 10-13 digit.';
   else if (pesan.length < 10) err = 'Pesan terlalu pendek, tulis minimal 10 karakter.';
+  else if (pesan.length > 1000) err = 'Pesan terlalu panjang, maksimal 1000 karakter.';
 
   if (err) {
     tampilError('kn-err', err);
@@ -872,12 +1187,18 @@ function kirimPesan(e) {
   }
   tampilError('kn-err', '');
 
-  var daftar = ambil('pesan', []);
-  daftar.push({ nama: nama, email: email, hp: hp, subjek: subjek, pesan: pesan, tanggal: hariIni() });
-  simpan('pesan', daftar);
+  var daftarPesan = ambil('pesan', []);
+  daftarPesan.push({ nama: nama, email: email, hp: hp, subjek: subjek, pesan: pesan, tanggal: hariIni() });
+  if (!simpan('pesan', daftarPesan)) return false;
 
   toast('Pesan berhasil dikirim. Terima kasih telah menghubungi kami.');
   $('kn-pesan').value = '';
+  $('kn-subjek').selectedIndex = 0;
+  if (!userAktif()) {
+    $('kn-nama').value = '';
+    $('kn-email').value = '';
+    $('kn-hp').value = '';
+  }
   return false;
 }
 
@@ -899,10 +1220,12 @@ function initKontak() {
 }
 
 /* ============ 12. JALANKAN SAAT HALAMAN SIAP ============ */
-renderLayout();
-if ($('bk-list')) initBeranda();
-if ($('kt-list')) initKatalog();
-if ($('form-reservasi')) initPesan();
-if ($('tb-admin-pesanan')) renderDashboard();
-if ($('form-masuk')) initAuth();
-if ($('kn-nama')) initKontak();
+(function jalankan() {
+  renderLayout();
+  if ($('bk-list')) initBeranda();
+  if ($('kt-list')) initKatalog();
+  if ($('form-reservasi')) initPesan();
+  if ($('tb-admin-pesanan')) renderDashboard();
+  if ($('form-masuk')) initAuth();
+  if ($('kn-nama')) initKontak();
+})();

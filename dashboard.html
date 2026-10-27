@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Pengelola - Sahabat Rental Mobil</title>
+  <meta name="description" content="Dashboard Admin dan Owner Sahabat Rental Mobil untuk mengelola armada, pesanan, dan laporan transaksi.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#272B2E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23CFDC66'/%3E%3Cpath d='M6 19L9 12C9.5 10.8 10.6 10 12 10H20C21.4 10 22.5 10.8 23 12L26 19' stroke='%23272B2E' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Crect x='5' y='17.5' width='22' height='7' rx='3.5' fill='%23272B2E'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -22,9 +26,10 @@
       </div>
     </div>
 
-    <div class="section">
+    <section class="section">
       <div class="container">
-        <div class="grid-3" style="margin-bottom: 24px;">
+        <!-- Ringkasan Angka (Tampil untuk Admin & Owner) -->
+        <div class="grid-3 mb">
           <div class="box stat-card">
             <span class="muted">Total Armada</span>
             <b id="st-unit">0 Unit</b>
@@ -39,14 +44,15 @@
           </div>
         </div>
 
+        <!-- PANEL KHUSUS ADMIN: Kelola Armada -->
         <div class="box" id="panel-admin-mobil">
           <h3 class="form-title">Kelola Data Kendaraan</h3>
-          <div class="alert alert-err" id="adm-err"></div>
-          <form class="filter-grid" onsubmit="return simpanMobilAdmin(event)">
+          <div class="alert alert-err" id="adm-err" role="alert" aria-live="assertive"></div>
+          <form class="admin-grid" onsubmit="return simpanMobilAdmin(event)" novalidate>
             <input type="hidden" id="adm-id">
             <div>
               <label for="adm-nama">Nama Mobil</label>
-              <input type="text" id="adm-nama" placeholder="Contoh: Honda HR-V">
+              <input type="text" id="adm-nama" placeholder="Contoh: Honda HR-V" maxlength="60" autocomplete="off">
             </div>
             <div>
               <label for="adm-tipe">Tipe</label>
@@ -65,11 +71,16 @@
               </select>
             </div>
             <div>
-              <label for="adm-tarif">Tarif / Hari (Rp)</label>
-              <input type="number" id="adm-tarif" placeholder="400000">
+              <label for="adm-kursi">Kursi</label>
+              <input type="number" id="adm-kursi" value="7" min="2" max="20" step="1" inputmode="numeric">
             </div>
             <div>
-              <button type="submit" class="btn btn-primary btn-block" id="adm-btn-simpan">Tambah Unit</button>
+              <label for="adm-tarif">Tarif / Hari (Rp)</label>
+              <input type="number" id="adm-tarif" placeholder="400000" min="1" step="1000" inputmode="numeric">
+            </div>
+            <div class="btn-row admin-actions">
+              <button type="submit" class="btn btn-primary" id="adm-btn-simpan">Tambah Unit</button>
+              <button type="button" class="btn btn-outline hidden" id="adm-btn-batal" onclick="resetFormMobil()">Batal</button>
             </div>
           </form>
 
@@ -77,11 +88,12 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Nama Kendaraan</th>
-                  <th>Tipe</th>
-                  <th>Transmisi</th>
-                  <th>Tarif / Hari</th>
-                  <th>Aksi</th>
+                  <th scope="col">Nama Kendaraan</th>
+                  <th scope="col">Tipe</th>
+                  <th scope="col">Transmisi</th>
+                  <th scope="col">Kursi</th>
+                  <th scope="col">Tarif / Hari</th>
+                  <th scope="col">Aksi</th>
                 </tr>
               </thead>
               <tbody id="tb-admin-mobil"></tbody>
@@ -89,26 +101,27 @@
           </div>
         </div>
 
+        <!-- PANEL RESERVASI & TRANSAKSI (Admin bisa ubah status, Owner melihat laporan) -->
         <div class="box">
-          <div class="section-head" style="margin-bottom: 12px;">
+          <div class="section-head compact">
             <div>
-              <h3 id="judul-tabel-pesanan">Daftar Pesanan & Transaksi Pembayaran</h3>
+              <h3 id="judul-tabel-pesanan">Daftar Pesanan &amp; Transaksi Pembayaran</h3>
             </div>
-            <button class="btn btn-outline btn-small no-print" onclick="window.print()">Cetak Laporan</button>
+            <button type="button" class="btn btn-outline btn-small no-print" onclick="window.print()">Cetak Laporan</button>
           </div>
           <div class="table-wrap">
             <table class="table">
               <thead>
                 <tr>
-                  <th>Kode</th>
-                  <th>Pelanggan</th>
-                  <th>Kendaraan</th>
-                  <th>Jadwal Sewa</th>
-                  <th>Layanan</th>
-                  <th>Metode Bayar</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th id="kolom-aksi-admin">Tindakan Admin</th>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Pelanggan</th>
+                  <th scope="col">Kendaraan</th>
+                  <th scope="col">Jadwal Sewa</th>
+                  <th scope="col">Layanan</th>
+                  <th scope="col">Metode Bayar</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" id="kolom-aksi-admin" class="kolom-aksi">Tindakan Admin</th>
                 </tr>
               </thead>
               <tbody id="tb-admin-pesanan"></tbody>
@@ -116,11 +129,11 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>
