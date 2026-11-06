@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -128,12 +128,38 @@
             </table>
           </div>
         </div>
+
+        <!-- PANEL PESAN MASUK DARI HALAMAN KONTAK (TC-30) -->
+        <div class="box no-print" id="panel-admin-pesan">
+          <div class="section-head compact">
+            <div>
+              <h3>Pesan &amp; Pertanyaan Masuk (Halaman Kontak)</h3>
+            </div>
+            <span class="badge badge-dark" id="jml-pesan-masuk">0 Pesan</span>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Tanggal</th>
+                  <th scope="col">Pengirim</th>
+                  <th scope="col">Kontak</th>
+                  <th scope="col">Subjek</th>
+                  <th scope="col">Isi Pesan</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" id="kolom-aksi-pesan" class="kolom-aksi">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tb-admin-pesan"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

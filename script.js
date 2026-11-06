@@ -59,6 +59,56 @@ function hapusData(k) {
   } catch (e) { /* abaikan */ }
 }
 
+/* Enkripsi Satu Arah (SHA-256) untuk Password sesuai NFR-04 (TC-26) */
+function enkripsiPassword(teks) {
+  var s = unescape(encodeURIComponent('srm_salt_2026:' + String(teks || '')));
+  var K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+  var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+  var l = s.length * 8;
+  var m = [];
+  for (var i = 0; i < s.length; i++) m[i >> 2] |= (s.charCodeAt(i) & 255) << (24 - (i % 4) * 8);
+  m[l >> 5] |= 0x80 << (24 - (l % 32));
+  m[(((l + 64) >> 9) << 4) + 15] = l;
+  var W = new Array(64);
+  function ror(n, b) { return (n >>> b) | (n << (32 - b)); }
+  for (var j = 0; j < m.length; j += 16) {
+    var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (var t = 0; t < 64; t++) {
+      if (t < 16) W[t] = m[j + t] | 0;
+      else {
+        var g0 = ror(W[t - 15], 7) ^ ror(W[t - 15], 18) ^ (W[t - 15] >>> 3);
+        var g1 = ror(W[t - 2], 17) ^ ror(W[t - 2], 19) ^ (W[t - 2] >>> 10);
+        W[t] = (W[t - 16] + g0 + W[t - 7] + g1) | 0;
+      }
+      var s1 = ror(e, 6) ^ ror(e, 11) ^ ror(e, 25);
+      var ch = (e & f) ^ (~e & g);
+      var t1 = (h + s1 + ch + K[t] + W[t]) | 0;
+      var s0 = ror(a, 2) ^ ror(a, 13) ^ ror(a, 22);
+      var maj = (a & b) ^ (a & c) ^ (b & c);
+      var t2 = (s0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  var hex = '';
+  for (var k = 0; k < 8; k++) hex += ('00000000' + (H[k] >>> 0).toString(16)).slice(-8);
+  return 'sha256$' + hex;
+}
+
+function sudahTerenkripsi(p) {
+  return /^sha256\$[0-9a-f]{64}$/.test(String(p || ''));
+}
+
 (function seed() {
   if (!Array.isArray(ambil('cars', null))) {
     simpan('cars', [
@@ -70,12 +120,23 @@ function hapusData(k) {
       { id: 6, nama: 'Toyota Fortuner', tipe: 'SUV', kursi: 7, transmisi: 'Matic', tarif: 900000 }
     ]);
   }
-  if (!Array.isArray(ambil('users', null))) {
+  var existingUsers = ambil('users', null);
+  if (!Array.isArray(existingUsers)) {
     simpan('users', [
-      { nama: 'Admin Sahabat', email: 'admin@sahabat.com', hp: '081200000001', password: 'admin123', role: 'admin' },
-      { nama: 'Owner Sahabat', email: 'owner@sahabat.com', hp: '081200000002', password: 'owner123', role: 'owner' },
-      { nama: 'Pelanggan Uji', email: 'pelanggan@sahabat.com', hp: '081200000003', password: 'pelanggan123', role: 'pelanggan' }
+      { nama: 'Admin Sahabat', email: 'admin@sahabat.com', hp: '081200000001', password: enkripsiPassword('admin123'), role: 'admin' },
+      { nama: 'Owner Sahabat', email: 'owner@sahabat.com', hp: '081200000002', password: enkripsiPassword('owner123'), role: 'owner' },
+      { nama: 'Pelanggan Uji', email: 'pelanggan@sahabat.com', hp: '081200000003', password: enkripsiPassword('pelanggan123'), role: 'pelanggan' }
     ]);
+  } else {
+    /* Migrasi otomatis password teks biasa di localStorage menjadi terenkripsi (TC-26) */
+    var perluSimpan = false;
+    for (var i = 0; i < existingUsers.length; i++) {
+      if (existingUsers[i] && !sudahTerenkripsi(existingUsers[i].password)) {
+        existingUsers[i].password = enkripsiPassword(existingUsers[i].password);
+        perluSimpan = true;
+      }
+    }
+    if (perluSimpan) simpan('users', existingUsers);
   }
   if (!Array.isArray(ambil('bookings', null))) simpan('bookings', []);
   if (!Array.isArray(ambil('pesan', null))) simpan('pesan', []);
@@ -139,6 +200,12 @@ function jumlahHari(m, s) {
 
 function emailValid(e) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+}
+
+/* Validasi Nama sesuai KTP: hanya huruf alfabet dan spasi, tanpa angka atau simbol (TC-04) */
+function namaValid(n) {
+  var bersih = String(n || '').trim().replace(/\s+/g, ' ');
+  return bersih.length >= 3 && /^[A-Za-z]+(?:\s[A-Za-z]+)*$/.test(bersih);
 }
 
 /* Hapus spasi, titik, dan tanda hubung agar "0812-3456-7890" tetap diterima */
@@ -281,9 +348,14 @@ function prosesLogin(email, pass) {
   if (!email || !pass) return { err: 'Email dan password wajib diisi.' };
   if (!emailValid(email)) return { err: 'Format email tidak valid.' };
   var users = ambil('users', []);
+  var passEnkripsi = enkripsiPassword(pass);
   var u = null;
   for (var i = 0; i < users.length; i++) {
-    if (users[i].email === email && users[i].password === pass) {
+    if (users[i].email === email && (users[i].password === passEnkripsi || users[i].password === pass)) {
+      if (!sudahTerenkripsi(users[i].password)) {
+        users[i].password = passEnkripsi;
+        simpan('users', users);
+      }
       u = users[i];
       break;
     }
@@ -314,6 +386,7 @@ function prosesDaftar(data) {
   var pesan = '';
   if (!nama || !email || !hp || !pass || !pass2) pesan = 'Semua kolom wajib diisi.';
   else if (nama.length < 3) pesan = 'Nama lengkap minimal 3 karakter.';
+  else if (!namaValid(nama)) pesan = 'Nama lengkap sesuai KTP hanya boleh berisi huruf alfabet dan spasi (tanpa angka atau simbol).';
   else if (!emailValid(email)) pesan = 'Format email tidak valid.';
   else if (!hpValid(hp)) pesan = 'Nomor HP harus berupa angka 10-13 digit.';
   else if (pass.length < 6) pesan = 'Password minimal 6 karakter.';
@@ -321,7 +394,7 @@ function prosesDaftar(data) {
   else if (sudahAda) pesan = 'Email sudah terdaftar.';
 
   if (pesan) return { err: pesan };
-  users.push({ nama: nama, email: email, hp: hp, password: pass, role: 'pelanggan' });
+  users.push({ nama: nama, email: email, hp: hp, password: enkripsiPassword(pass), role: 'pelanggan' });
   if (!simpan('users', users)) return { err: 'Data akun gagal disimpan.' };
   return { ok: true, email: email };
 }
@@ -991,6 +1064,29 @@ function ubahStatusPesanan(kode, statusBaru) {
   renderDashboard();
 }
 
+function tandaiPesanDibaca(idx) {
+  if (!adalahAdmin()) return;
+  var daftarPesan = ambil('pesan', []);
+  if (!daftarPesan[idx]) return;
+  daftarPesan[idx].status = 'Dibaca';
+  if (simpan('pesan', daftarPesan)) {
+    toast('Pesan ditandai sudah dibaca.');
+  }
+  renderDashboard();
+}
+
+function hapusPesanAdmin(idx) {
+  if (!adalahAdmin()) return;
+  var daftarPesan = ambil('pesan', []);
+  if (!daftarPesan[idx]) return;
+  if (!confirm('Hapus pesan dari "' + daftarPesan[idx].nama + '"?')) return;
+  daftarPesan.splice(idx, 1);
+  if (simpan('pesan', daftarPesan)) {
+    toast('Pesan berhasil dihapus.');
+  }
+  renderDashboard();
+}
+
 function renderDashboard() {
   var u = userAktif();
   if (!u || (u.role !== 'admin' && u.role !== 'owner')) {
@@ -1003,11 +1099,12 @@ function renderDashboard() {
   setText('db-title', isOwner ? 'Laporan & Monitoring Usaha' : 'Pengelolaan Armada & Reservasi');
   setText('db-subtitle', isOwner
     ? 'Pantau ringkasan armada, pesanan, dan pendapatan usaha secara real-time.'
-    : 'Kelola armada, validasi pesanan pelanggan, dan pantau laporan transaksi.');
+    : 'Kelola armada, validasi pesanan pelanggan, dan pantau laporan transaksi serta pesan masuk.');
 
   if (isOwner) {
     if ($('panel-admin-mobil')) $('panel-admin-mobil').classList.add('hidden');
     if ($('kolom-aksi-admin')) $('kolom-aksi-admin').classList.add('hidden');
+    if ($('kolom-aksi-pesan')) $('kolom-aksi-pesan').classList.add('hidden');
   }
 
   var cars = ambil('cars', []);
@@ -1079,6 +1176,44 @@ function renderDashboard() {
     htmlPesanan = '<tr><td colspan="' + span + '" class="center muted">Belum ada data transaksi pemesanan.</td></tr>';
   }
   setHtml('tb-admin-pesanan', htmlPesanan);
+
+  /* Render Tabel Pesan Masuk dari Halaman Kontak (TC-30) */
+  if ($('tb-admin-pesan')) {
+    var daftarPesan = ambil('pesan', []);
+    setText('jml-pesan-masuk', daftarPesan.length + ' Pesan');
+    var htmlKontak = '';
+    for (var p = daftarPesan.length - 1; p >= 0; p--) {
+      var item = daftarPesan[p];
+      var statusPesan = item.status === 'Dibaca' ? 'Dibaca' : 'Baru';
+      var badgePesan = statusPesan === 'Dibaca'
+        ? '<span class="badge badge-done">Dibaca</span>'
+        : '<span class="badge badge-ok">Baru</span>';
+      var aksiPesan = '';
+      if (!isOwner) {
+        var btnBaca = statusPesan === 'Baru'
+          ? '<button type="button" class="btn btn-outline btn-small" onclick="tandaiPesanDibaca(' + p + ')">Tandai Dibaca</button>'
+          : '';
+        aksiPesan = '<td class="kolom-aksi"><div class="aksi-group">' +
+          btnBaca +
+          '<button type="button" class="btn btn-outline btn-small btn-danger" onclick="hapusPesanAdmin(' + p + ')">Hapus</button>' +
+        '</div></td>';
+      }
+      htmlKontak += '<tr>' +
+        '<td>' + tgl(item.tanggal) + '</td>' +
+        '<td><b>' + esc(item.nama) + '</b></td>' +
+        '<td>' + esc(item.email) + (item.hp ? '<br><small>' + esc(item.hp) + '</small>' : '') + '</td>' +
+        '<td><span class="badge badge-dark">' + esc(item.subjek || 'Pertanyaan Umum') + '</span></td>' +
+        '<td>' + esc(item.pesan) + '</td>' +
+        '<td>' + badgePesan + '</td>' +
+        aksiPesan +
+      '</tr>';
+    }
+    if (!htmlKontak) {
+      var spanPesan = isOwner ? 6 : 7;
+      htmlKontak = '<tr><td colspan="' + spanPesan + '" class="center muted">Belum ada pesan atau pertanyaan yang masuk dari halaman Kontak.</td></tr>';
+    }
+    setHtml('tb-admin-pesan', htmlKontak);
+  }
 }
 
 /* ============ 10. HALAMAN LOGIN & DAFTAR ============ */
@@ -1176,6 +1311,7 @@ function kirimPesan(e) {
 
   var err = '';
   if (!nama || !email || !pesan) err = 'Nama, email, dan pesan wajib diisi.';
+  else if (!namaValid(nama)) err = 'Nama lengkap hanya boleh berisi huruf alfabet dan spasi.';
   else if (!emailValid(email)) err = 'Format email tidak valid.';
   else if (hp && !hpValid(hp)) err = 'Nomor HP harus berupa angka 10-13 digit.';
   else if (pesan.length < 10) err = 'Pesan terlalu pendek, tulis minimal 10 karakter.';
@@ -1188,7 +1324,7 @@ function kirimPesan(e) {
   tampilError('kn-err', '');
 
   var daftarPesan = ambil('pesan', []);
-  daftarPesan.push({ nama: nama, email: email, hp: hp, subjek: subjek, pesan: pesan, tanggal: hariIni() });
+  daftarPesan.push({ nama: nama, email: email, hp: hp, subjek: subjek, pesan: pesan, tanggal: hariIni(), status: 'Baru' });
   if (!simpan('pesan', daftarPesan)) return false;
 
   toast('Pesan berhasil dikirim. Terima kasih telah menghubungi kami.');
