@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -27,6 +27,20 @@
 
     <section class="section">
       <div class="container">
+        <!-- Notifikasi Pengambilan Mobil setelah Pemesanan Berhasil -->
+        <div class="pickup-notice hidden" id="notif-pengambilan" role="status" aria-live="polite">
+          <div class="pickup-icon" id="ic-notif-lokasi"></div>
+          <div class="pickup-body">
+            <span class="label">Pemesanan Berhasil</span>
+            <h3 id="notif-judul">Pesanan Anda telah tercatat!</h3>
+            <p id="notif-pesan">Silakan datang ke lokasi kami di <b>Universitas Mikroskil, Building B, Medan</b> (pukul 07.00 - 21.00 WIB) sesuai jadwal sewa dengan membawa <b>KTP asli</b> untuk pengambilan mobil.</p>
+            <div class="btn-row mt-sm">
+              <a href="kontak.html" class="btn btn-primary btn-small">Lihat Lokasi Kantor</a>
+              <button type="button" class="btn btn-ghost btn-small" onclick="tutupNotifPengambilan()">Mengerti &amp; Tutup</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Grid Form Pemesanan & Ringkasan Pembayaran -->
         <div class="kontak-grid" id="area-form-pesan">
           <!-- Kolom Kiri: Form Detail Sewa -->
@@ -148,6 +162,6 @@
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

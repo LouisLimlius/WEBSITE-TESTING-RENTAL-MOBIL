@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -58,16 +58,49 @@
           <div id="form-daftar" class="hidden" role="tabpanel" aria-labelledby="tab-daftar">
             <div class="alert alert-err" id="rg-err" role="alert" aria-live="assertive"></div>
             <form onsubmit="return daftar(event)" novalidate>
-              <label for="rg-nama">Nama Lengkap</label>
-              <input type="text" id="rg-nama" placeholder="Nama sesuai KTP" autocomplete="name" maxlength="60">
               <div class="grid-2 gap-sm">
+                <div>
+                  <label for="rg-nama">Nama Lengkap (Sesuai KTP)</label>
+                  <input type="text" id="rg-nama" placeholder="Contoh: Budi Santoso" autocomplete="name" maxlength="60">
+                </div>
+                <div>
+                  <label for="rg-ktp">Nomor KTP (NIK 16 Digit)</label>
+                  <input type="text" id="rg-ktp" placeholder="16 digit angka NIK" inputmode="numeric" maxlength="16" autocomplete="off">
+                </div>
+              </div>
+              <div class="grid-2 gap-sm">
+                <div>
+                  <label for="rg-jk">Jenis Kelamin</label>
+                  <select id="rg-jk">
+                    <option value="">-- Pilih Jenis Kelamin --</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="rg-tgllahir">Tanggal Lahir</label>
+                  <input type="date" id="rg-tgllahir" autocomplete="bday">
+                </div>
+              </div>
+              <div>
+                <label for="rg-foto-ktp">Unggah Foto KTP (JPG / PNG / WebP)</label>
+                <input type="file" id="rg-foto-ktp" class="input-file" accept="image/jpeg,image/png,image/webp" onchange="pilihFotoKtp(event)">
+                <div id="rg-preview-wrap" class="ktp-preview hidden">
+                  <img id="rg-preview-img" src="" alt="Pratinjau Foto KTP">
+                  <div>
+                    <b id="rg-preview-nama">Foto KTP siap diunggah</b>
+                    <small class="muted">Pastikan NIK dan nama pada KTP terlihat jelas.</small>
+                  </div>
+                </div>
+              </div>
+              <div class="grid-2 gap-sm">
+                <div>
+                  <label for="rg-hp">Nomor Telepon / HP</label>
+                  <input type="tel" id="rg-hp" placeholder="08xxxxxxxxxx" autocomplete="tel" inputmode="numeric" maxlength="16">
+                </div>
                 <div>
                   <label for="rg-email">Email</label>
                   <input type="email" id="rg-email" placeholder="nama@email.com" autocomplete="email" maxlength="80">
-                </div>
-                <div>
-                  <label for="rg-hp">Nomor HP</label>
-                  <input type="tel" id="rg-hp" placeholder="08xxxxxxxxxx" autocomplete="tel" inputmode="numeric" maxlength="16">
                 </div>
               </div>
               <div class="grid-2 gap-sm">
@@ -90,6 +123,6 @@
 
   <div id="footer-root"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>
